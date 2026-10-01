@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cahier de Laboratoire - Sciences CM1/CM2 (v2.4)</title>
+<title>Cahier de Laboratoire - Sciences CM1/CM2 (v2.5)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Librairies CDN (pdf, html2canvas, sortable) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<!-- Librairies locales (dossier lib/) : fonctionnent même si le réseau de l'école bloque les CDN -->
+<script src="lib/jspdf.umd.min.js"></script>
+<script src="lib/html2canvas.min.js"></script>
+<script src="lib/Sortable.min.js"></script>
 
 <style>
   :root {
@@ -348,6 +348,24 @@
     .section-block { break-inside:avoid; page-break-inside:avoid; }
     .img-zone.has-img { border:1px solid #ccc; min-height:auto; }
   }
+
+  /* ---------- MODE ÉLÈVE / ENSEIGNANT (v2.5) ---------- */
+  .student-only-inline { display:none !important; }
+  body.mode-eleve .student-only-inline { display:inline-flex !important; }
+  body.mode-eleve .teacher-only,
+  body.mode-eleve .teacher-only-inline,
+  body.mode-eleve #blockIA { display:none !important; }
+  .save-reminder {
+    display:none; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    margin:0 0 18px; padding:10px 14px; border-radius:var(--radius);
+    background:#fff8e1; color:#5d4300; border:1px solid #ffd54f; font-size:.9rem;
+  }
+  body.mode-eleve .save-reminder.visible { display:flex; }
+  @media (prefers-color-scheme: dark) { .save-reminder { background:#3a2f0b; color:#ffe082; border-color:#8d6e00; } }
+  .mode-badge { font-size:.7rem; font-weight:600; padding:3px 8px; border-radius:20px; background:var(--pyp-soft); color:var(--pyp); }
+  .code-input { width:100%; padding:10px 12px; font-size:1.1rem; border:1px solid var(--border); border-radius:6px; background:var(--bg-paper); color:var(--ink); }
+  .code-error { color:var(--danger); font-size:.85rem; min-height:1.2em; margin-top:6px; }
+  @media print { .save-reminder { display:none !important; } }
 </style>
 </head>
 <body>
@@ -359,13 +377,23 @@
     <h1 class="lab-title"><span class="icon">🧪</span> Cahier de Laboratoire</h1>
     <div class="header-actions">
       <button class="btn btn-secondary" id="btnNewExp" title="Nouvelle expérience (efface tout)">➕ Nouvelle</button>
-      <button class="btn btn-primary" id="btnSaveLocal" title="Sauvegarder manuellement">💾 Sauver</button>
+      <button class="btn btn-primary teacher-only-inline" id="btnSaveLocal" title="Sauvegarder manuellement">💾 Sauver</button>
+      <button class="btn btn-primary" id="btnSaveFile" title="Enregistrer tout le cahier dans un fichier (.json)">💾 Enregistrer mon cahier</button>
+      <button class="btn btn-secondary" id="btnOpenFile" title="Rouvrir un cahier enregistré (.json)">📂 Ouvrir mon cahier</button>
       <button class="btn btn-primary" id="btnExportPDF" title="Exporter en PDF">📄 Exporter PDF</button>
-      <button class="btn btn-secondary pyp-only-inline" id="btnGuide" title="Guide enseignant et programmation des séances">📘 Guide</button>
-      <button class="btn btn-secondary pyp-only-inline" id="btnLivrables" title="Produire un document (carnet d'étape, lettre aux parents…)">📦 Livrables</button>
-      <button class="btn btn-icon" id="btnSettings" title="Paramètres">⚙️</button>
+      <button class="btn btn-secondary pyp-only-inline teacher-only-inline" id="btnGuide" title="Guide enseignant et programmation des séances">📘 Guide</button>
+      <button class="btn btn-secondary pyp-only-inline teacher-only-inline" id="btnLivrables" title="Produire un document (carnet d'étape, lettre aux parents…)">📦 Livrables</button>
+      <button class="btn btn-secondary teacher-only-inline" id="btnLock" title="Repasser en mode élève sur cet appareil">🎓 Mode élève</button>
+      <button class="btn btn-icon teacher-only-inline" id="btnSettings" title="Paramètres">⚙️</button>
+      <button class="btn btn-icon student-only-inline" id="btnUnlock" title="Mode enseignant (code)">🔒</button>
     </div>
   </header>
+
+  <!-- ========== RAPPEL D'ENREGISTREMENT (mode élève) ========== -->
+  <div class="save-reminder" id="saveReminder" role="status">
+    <span>⚠️ Ton cahier a changé depuis le dernier enregistrement. Enregistre-le avant de fermer !</span>
+    <button class="btn btn-primary btn-small" type="button" id="btnSaveFile2">💾 Enregistrer mon cahier</button>
+  </div>
 
   <!-- ========== AVANCEMENT (mode PYP) ========== -->
   <div class="progress-wrap pyp-only" id="progressWrap">
@@ -582,8 +610,8 @@
   <!-- ========== PIED DE PAGE ========= -->
   <footer class="lab-footer">
     <span class="status-wrap"><span class="status-dot" id="statusDot"></span><span id="statusText">Chargement…</span></span>
-    <span>Enregistré automatiquement dans le navigateur (LocalStorage). <a href="javascript:void(0)" id="linkClearAll" style="color:var(--accent); text-decoration:underline;">Effacer tout</a></span>
-    <span style="font-size:.7rem; opacity:.7;">Version 2.4 — Mode PYP (IB) : guide enseignant, 14 séances, livrables PDF, sauvegarde fichier</span>
+    <span>Enregistré automatiquement dans ce navigateur. En fin de séance : « 💾 Enregistrer mon cahier ». <a href="javascript:void(0)" id="linkClearAll" class="teacher-only-inline" style="color:var(--accent); text-decoration:underline;">Effacer tout</a></span>
+    <span style="font-size:.7rem; opacity:.7;"><span class="mode-badge" id="modeBadge">Mode élève</span> Version 2.5 — mode élève / enseignant, bibliothèques locales, sauvegarde fichier</span>
   </footer>
 
 </div>
@@ -592,10 +620,24 @@
 <div class="modal-overlay" id="modalNewExp">
   <div class="modal-box">
     <h3>⚠️ Nouvelle expérience ?</h3>
-    <p>Cela supprimera <strong>toutes les données actuelles</strong> de cette page.<br>Assurez-vous d'avoir exporté un PDF.</p>
+    <p>Cela supprimera <strong>toutes les données actuelles</strong> de cette page.<br>Enregistre d'abord ton cahier dans un fichier pour pouvoir le retrouver.</p>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="modalCancel">Annuler</button>
+      <button class="btn btn-primary" id="modalSaveFirst">💾 Enregistrer d'abord</button>
       <button class="btn btn-danger" id="modalConfirm">Oui, tout effacer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalUnlock">
+  <div class="modal-box">
+    <h3>🔒 Mode enseignant</h3>
+    <p>Saisissez le code enseignant pour afficher le guide, les livrables, les paramètres et l'assistant IA sur cet appareil.</p>
+    <input type="password" id="unlockCode" class="code-input" autocomplete="off" placeholder="Code enseignant">
+    <div class="code-error" id="unlockError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" type="button" id="unlockCancel">Annuler</button>
+      <button class="btn btn-primary" type="button" id="unlockConfirm">Déverrouiller</button>
     </div>
   </div>
 </div>
@@ -769,6 +811,13 @@
 const STORAGE_KEY = 'labo_sciences_cm_v2.4';
 const LEGACY_STORAGE_KEYS = ['labo_sciences_cm_v2.3', 'labo_sciences_cm_v2.2']; // anciennes versions (lues, jamais effacées)
 const AI_SETTINGS_KEY = 'aiSettings_v2';
+/* ---------- MODE ÉLÈVE / ENSEIGNANT (v2.5) ----------
+   Par défaut, l'appli s'ouvre en mode élève sur chaque appareil.
+   Le mode enseignant se déverrouille avec un code ; seule son empreinte SHA-256 figure ici.
+   Pour changer de code : remplacer TEACHER_CODE_SHA256 par l'empreinte SHA-256 du nouveau code. */
+const MODE_KEY = 'labo_mode_v1';
+const EXPORT_HASH_KEY = 'labo_last_export_hash_v1';
+const TEACHER_CODE_SHA256 = 'f5a135a2c751beacbda9c2cadc17debe1699e67b6634a0b5165fac37d9ad1428';
 
 /* Base de données des "triggers" (scénarios d'enquête) */
 const TRIGGERS_DB = [
@@ -1044,7 +1093,7 @@ const GUIDE_MEMO = [
   { h:"Si l'élève va plus vite que prévu",
     p:["C'est fréquent avec un élève à haut potentiel. Plutôt que d'ajouter des séances, approfondissez : demandez une deuxième source contradictoire, une analogie de son invention, ou une version de son explication destinée à des CE1. Le tutorat est la meilleure extension : expliquer oblige à structurer."] },
   { h:"Sauvegarde",
-    p:["Le cahier est enregistré dans le navigateur de l'ordinateur utilisé. Une fois par période, ouvrez ⚙️ Paramètres et cliquez sur « Enregistrer dans un fichier » : le fichier .json obtenu peut être rouvert sur un autre poste."] }
+    p:["Le cahier est enregistré dans le navigateur de l'appareil utilisé. En fin de séance, l'élève clique sur « 💾 Enregistrer mon cahier » : le fichier .json (dossier Téléchargements) se rouvre sur n'importe quel poste avec « 📂 Ouvrir mon cahier ». En mode élève, un bandeau jaune rappelle d'enregistrer quand le cahier a changé."] }
 ];
 const AXE_PLACEHOLDERS = [
   'Ex. : Comment mesure-t-on le temps ?',
@@ -1253,6 +1302,100 @@ function createPhaseBlock(data, idx) {
   return w;
 }
 
+/* ---------- MODE ÉLÈVE / ENSEIGNANT ---------- */
+function sha256Hex(ascii) {
+  /* SHA-256 compact, synchrone (fonctionne aussi en file://) */
+  const rr = (v, a) => (v >>> a) | (v << (32 - a));
+  const maxWord = Math.pow(2, 32);
+  const words = []; const asciiBitLength = ascii.length * 8;
+  const hash = [], k = []; let primeCounter = 0; const isComposite = {};
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (let i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+      hash[primeCounter] = (Math.pow(candidate, .5) * maxWord) | 0;
+      k[primeCounter++] = (Math.pow(candidate, 1 / 3) * maxWord) | 0;
+    }
+  }
+  ascii += '\x80';
+  while (ascii.length % 64 - 56) ascii += '\x00';
+  for (let i = 0; i < ascii.length; i++) {
+    const j = ascii.charCodeAt(i);
+    words[i >> 2] |= j << ((3 - i) % 4) * 8;
+  }
+  words[words.length] = ((asciiBitLength / maxWord) | 0);
+  words[words.length] = (asciiBitLength);
+  let H = hash.slice(0, 8);
+  for (let j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16); const oldHash = H;
+    H = H.slice(0, 8);
+    for (let i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2];
+      const a = H[0], e = H[4];
+      const temp1 = H[7] + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & H[5]) ^ ((~e) & H[6])) + k[i]
+        + (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))) | 0);
+      const temp2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & H[1]) ^ (a & H[2]) ^ (H[1] & H[2]));
+      H = [(temp1 + temp2) | 0].concat(H);
+      H[4] = (H[4] + temp1) | 0;
+    }
+    for (let i = 0; i < 8; i++) H[i] = (H[i] + oldHash[i]) | 0;
+  }
+  let result = '';
+  for (let i = 0; i < 8; i++) for (let j = 3; j + 1; j--) {
+    const b = (H[i] >> (j * 8)) & 255; result += ((b < 16) ? 0 : '') + b.toString(16);
+  }
+  return result;
+}
+function utf8(str) { return unescape(encodeURIComponent(str)); }
+function isEleve() {
+  try { return localStorage.getItem(MODE_KEY) !== 'enseignant'; } catch(e) { return true; }
+}
+function applyMode() {
+  const eleve = isEleve();
+  document.body.classList.toggle('mode-eleve', eleve);
+  const b = $('#modeBadge'); if(b) b.textContent = eleve ? 'Mode élève' : 'Mode enseignant';
+  updateSaveReminder();
+}
+function setMode(mode) {
+  try { localStorage.setItem(MODE_KEY, mode); } catch(e) {}
+  applyMode();
+}
+function tryUnlock() {
+  const inp = $('#unlockCode'); const err = $('#unlockError');
+  const code = (inp.value || '').trim();
+  if(sha256Hex(utf8(code)) === TEACHER_CODE_SHA256) {
+    inp.value = ''; err.textContent = '';
+    closeAllModals(); setMode('enseignant');
+    showStatus('🔓 Mode enseignant activé sur cet appareil.');
+  } else {
+    err.textContent = 'Code incorrect.'; inp.select();
+  }
+}
+/* Empreinte rapide du contenu, pour savoir si le cahier a changé depuis le dernier fichier enregistré */
+function contentHash(obj) {
+  const str = JSON.stringify({ ...obj, aiSettings: null });
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return String(h >>> 0) + ':' + str.length;
+}
+function cahierVide() {
+  const d = { ...getDefaultState(), triggersShown: state.triggersShown, iaShown: state.iaShown,
+              pypMode: state.pypMode, largeurConfort: state.largeurConfort };
+  return contentHash(d) === contentHash(state);
+}
+function cahierModifieDepuisExport() {
+  if(cahierVide()) return false;
+  let last = null; try { last = localStorage.getItem(EXPORT_HASH_KEY); } catch(e) {}
+  return last !== contentHash(state);
+}
+function updateSaveReminder() {
+  const el = $('#saveReminder'); if(!el) return;
+  el.classList.toggle('visible', cahierModifieDepuisExport());
+}
+function marquerExporte() {
+  try { localStorage.setItem(EXPORT_HASH_KEY, contentHash(state)); } catch(e) {}
+  updateSaveReminder();
+}
+
 /* ---------- IA SETTINGS ---------- */
 function loadAISettings() {
   const saved = JSON.parse(localStorage.getItem(AI_SETTINGS_KEY) || '{}');
@@ -1274,6 +1417,7 @@ function saveAISettings() {
 
 /* ---------- IA PROMPT ---------- */
 function askAI() {
+  if(isEleve()) return;
   const prompt = $('#aiPromptInput').value.trim();
   if(!prompt) return alert('Entrez d’abord un prompt.');
   if(state.aiSettings.model === 'none') return alert('Aucun modèle IA sélectionné.');
@@ -1420,7 +1564,8 @@ function debounceSave() {
 /* ---------- UTILITAIRES ---------- */
 function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  catch(e) { showStatus('⚠️ Erreur stockage (images trop lourdes ?)'); }
+  catch(e) { showStatus('⚠️ Erreur stockage (images trop lourdes ?) — enregistre ton cahier dans un fichier.'); }
+  updateSaveReminder();
 }
 function showStatus(msg) { const el = $('#statusText'); if(el) el.textContent = msg; }
 function closeAllModals() { $$('.modal-overlay').forEach(m => m.classList.remove('active')); }
@@ -1518,11 +1663,11 @@ function esc(v) {
   return String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 }
 function fileName(base, qui, quand) {
-  return `${base}_${(qui || 'eleve')}_${quand || todayISO()}.pdf`.replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
+  return `${base}_${(qui || 'eleve')}_${quand || todayISO()}.pdf`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
 }
 function pdfLibsReady() {
   if(window.html2canvas && window.jspdf) return true;
-  alert("Les outils PDF ne sont pas disponibles : cette page a besoin d'Internet au premier chargement.");
+  alert("Les outils PDF ne sont pas disponibles : vérifiez que le dossier « lib » est bien à côté de index.html.");
   return false;
 }
 function renderElementToPDF(el, filename) {
@@ -1777,9 +1922,18 @@ function ouvrirEtape(cycleValue) {
 ------------------------------------------------------------ */
 function exportJSON() {
   const nom = `cahier_${(state.meta.author || state.meta.title || 'eleve')}_${state.meta.date || todayISO()}.json`
-    .replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
-  telechargerFichier(JSON.stringify(state, null, 2), nom, 'application/json')
-    .then(ok => { if(ok) showStatus('Cahier enregistré dans un fichier.'); });
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
+  const copie = { ...state, aiSettings: { ...state.aiSettings, apiKey: '' } }; // jamais de clé API dans les fichiers
+  const hashAuMomentExport = contentHash(state);
+  return telechargerFichier(JSON.stringify(copie, null, 2), nom, 'application/json')
+    .then(ok => {
+      if(ok) {
+        try { localStorage.setItem(EXPORT_HASH_KEY, hashAuMomentExport); } catch(e) {}
+        updateSaveReminder();
+        showStatus('✅ Cahier enregistré dans un fichier (dossier Téléchargements).');
+      }
+      return ok;
+    });
 }
 function importJSONFile(file) {
   const reader = new FileReader();
@@ -1787,9 +1941,13 @@ function importJSONFile(file) {
     try {
       const raw = JSON.parse(ev.target.result);
       if(!confirm('Remplacer le cahier actuel par le contenu du fichier ? Le cahier affiché sera perdu.')) return;
+      const cleLocale = state.aiSettings.apiKey;
       state = migrateState(raw);
+      state.aiSettings.apiKey = cleLocale;
       saveState();
       renderAll();
+      applyModules();
+      marquerExporte();
       closeAllModals();
       showStatus('Cahier chargé depuis le fichier.');
     } catch(e) { console.error(e); alert("Ce fichier n'est pas un cahier valide."); }
@@ -2064,7 +2222,7 @@ function lienTelechargement(blob, nom) {
 function nomFichier(base, ext) {
   const qui = state.meta.author || state.meta.title || 'eleve';
   const quand = state.meta.date || todayISO();
-  return `${base}_${qui}_${quand}.${ext}`.replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
+  return `${base}_${qui}_${quand}.${ext}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
 }
 function exportDocHTML(corps, base, titre) {
   showStatus('Préparation du document HTML…');
@@ -2116,7 +2274,9 @@ const DOC_FIELDS = {
 document.addEventListener('DOMContentLoaded', ()=>{
   renderAll();
   loadAISettings();
-  saveState(); // migration silencieuse vers la v2.4
+  applyModules();
+  saveState(); // migration silencieuse
+  applyMode();
   showStatus(state.pypMode ? 'Application prête — mode PYP actif.' : 'Application prête.');
 });
 
@@ -2134,6 +2294,15 @@ document.addEventListener('input', e => {
     if(t.tagName === 'TEXTAREA') updateCharCount(block);
     saveBlockData(block); debounceSave();
   }
+});
+
+/* Code enseignant : touche Entrée */
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && e.target && e.target.id === 'unlockCode') { e.preventDefault(); tryUnlock(); }
+});
+/* Mode élève : prévenir avant de fermer si le cahier n'a pas été enregistré dans un fichier */
+window.addEventListener('beforeunload', e => {
+  if(isEleve() && cahierModifieDepuisExport()) { e.preventDefault(); e.returnValue = ''; }
 });
 
 /* Listes, cases à cocher, images */
@@ -2172,6 +2341,7 @@ document.addEventListener('change', e => {
 document.addEventListener('click', e=>{
   if(e.target.closest('#linkClearAll')) {
     e.preventDefault();
+    if(isEleve()) return;
     if(confirm('Effacer tout le cahier ?')) resetExperiment();
     return;
   }
@@ -2181,7 +2351,7 @@ document.addEventListener('click', e=>{
   if(btn.id==='btnNewExp') openModal('modalNewExp');
   if(btn.id==='btnSaveLocal') { saveState(); showStatus('Sauvegardé manuellement ✅'); }
   if(btn.id==='btnExportPDF') generatePDF();
-  if(btn.id==='btnSettings') { syncSettingsModal(); openModal('modalSettings'); }
+  if(btn.id==='btnSettings' && !isEleve()) { syncSettingsModal(); openModal('modalSettings'); }
   if(btn.id==='btnGuide') { renderGuideStatic(); renderGuideProg(); openModal('modalGuide'); }
   if(btn.id==='btnLivrables') { renderDocsForm(); openModal('modalLivrables'); }
   if(btn.id==='guideClose' || btn.id==='livrablesClose') closeAllModals();
@@ -2195,7 +2365,13 @@ document.addEventListener('click', e=>{
     }
   }
   if(btn.matches('.btn-ouvrir-etape')) ouvrirEtape(btn.dataset.cycle);
-  if(btn.id==='btnExportJSON') exportJSON();
+  if(btn.id==='btnExportJSON' || btn.id==='btnSaveFile' || btn.id==='btnSaveFile2') exportJSON();
+  if(btn.id==='btnOpenFile') { const f = $('#fileImportJSON'); if(f) f.click(); }
+  if(btn.id==='modalSaveFirst') exportJSON();
+  if(btn.id==='btnUnlock') { $('#unlockError').textContent = ''; openModal('modalUnlock'); setTimeout(() => $('#unlockCode').focus(), 50); }
+  if(btn.id==='unlockCancel') closeAllModals();
+  if(btn.id==='unlockConfirm') tryUnlock();
+  if(btn.id==='btnLock') { setMode('eleve'); showStatus('🎓 Mode élève activé.'); }
   if(btn.id==='btnImportJSON') { const f = $('#fileImportJSON'); if(f) f.click(); }
 
   // Modale : nouvelle expérience
