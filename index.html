@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cahier de Laboratoire - Sciences CM1/CM2 (v2.4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Librairies CDN (pdf, html2canvas, sortable) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<style>
+  :root {
+    --bg-body: #e8e4d9; --bg-paper: #fdfcf5; --ink: #2c2c2c; --ink-light: #4a4a4a;
+    --border: #d9d0b8; --accent: #2e7d32; --accent-hover: #1b5e20;
+    --danger: #c62828; --header-bg: #f0efe8; --phase-bg: #ffffff;
+    --radius: 8px; --shadow: 0 4px 12px rgba(0,0,0,.08);
+    --font-main: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'Fira Mono', 'Consolas', monospace;
+    --trigger-bg: #e8f5e9; --trigger-border: #a5d6a7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-body: #121212; --bg-paper: #1e1e1e; --ink: #e0e0e0; --ink-light: #b0b0b0;
+      --border: #444; --accent: #4caf50; --accent-hover: #388e3c; --danger: #e53935;
+      --header-bg: #202020; --phase-bg: #252525; --trigger-bg: #173921;
+    }
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: var(--font-main); background: var(--bg-body); color: var(--ink); min-height: 100vh; padding: 20px; line-height:1.5; }
+  .app-container {
+    max-width: 100%; margin:0 auto; background: var(--bg-paper);
+    padding:28px; border-radius: var(--radius); box-shadow: var(--shadow);
+    border:1px solid var(--border); position:relative;
+  }
+
+  /* ---------- EN-TÊTE ---------- */
+  .lab-header {
+    background: var(--header-bg); border-radius: var(--radius) var(--radius) 0 0;
+    padding:20px 24px; display:flex; flex-wrap:wrap; gap:12px;
+    align-items:center; justify-content:space-between;
+    margin:-28px -28px 24px -28px; border-bottom:3px solid var(--accent); position:sticky; top:0; z-index:100;
+  }
+  .lab-title { font-size:1.7rem; font-weight:700; color:var(--accent); display:flex; align-items:center; gap:10px; }
+  .lab-title .icon { font-size:2rem; }
+  .header-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .btn {
+    padding:8px 14px; border:none; border-radius:6px; cursor:pointer;
+    font-weight:500; font-size:.85rem; transition:.2s; display:inline-flex;
+    align-items:center; gap:5px; white-space:nowrap;
+  }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:var(--accent-hover); transform:translateY(-1px); box-shadow:0 4px 6px rgba(46,125,50,.2); }
+  .btn-secondary { background:var(--border); color:var(--ink); }
+  .btn-secondary:hover { background:#cfc8b6; }
+  .btn-danger { background:var(--danger); color:#fff; }
+  .btn-danger:hover { filter:brightness(1.1); }
+  .btn-icon { width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center; }
+
+  /* ---------- MÉTADONNÉES (COMPACTES) ---------- */
+  .compact-meta {
+    display:flex; flex-wrap:wrap; gap:14px; margin-bottom:20px;
+    padding:12px 16px; background:var(--header-bg); border-radius:var(--radius);
+    border:1px dashed var(--border); align-items:center;
+  }
+  .meta-group { display:flex; flex-direction:column; min-width:140px; flex:1; }
+  .meta-group label {
+    font-size:.75rem; font-weight:600; color:var(--ink-light);
+    text-transform:uppercase; margin-bottom:4px;
+  }
+  .meta-group input,
+  .meta-group select {
+    padding:8px 10px; border:1px solid var(--border);
+    border-radius:6px; background:var(--bg-paper); color:var(--ink);
+    font-family:inherit; font-size:.95rem;
+  }
+  .meta-group input:focus,
+  .meta-group select:focus { outline:2px solid var(--accent); border-color:var(--accent); }
+
+  /* ---------- BLOC SECTION ---------- */
+  .section-block { margin-bottom:24px; border:1px solid var(--border); border-radius:var(--radius); background:var(--phase-bg); overflow:hidden; }
+  .section-header {
+    background:var(--header-bg); border-bottom:1px solid var(--border);
+    padding:12px 15px; display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:8px;
+  }
+  .section-header h2 {
+    margin:0; font-size:1.05rem; color:var(--accent); font-weight:600;
+    display:flex; align-items:center; gap:6px;
+  }
+  .section-header h2 .badge {
+    background:var(--accent); color:#fff; font-size:.6rem; padding:2px 6px;
+    border-radius:10px; font-weight:700; text-transform:uppercase;
+  }
+  .section-content { padding:14px; }
+
+  /* ---------- BLOC OBSERVATION (par défaut) ---------- */
+  .observation-block {
+    border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; margin-bottom:16px; background:linear-gradient(180deg, var(--bg-paper) 0%, var(--phase-bg) 100%);
+  }
+  .obs-header {
+    display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;
+  }
+  .obs-type {
+    font-weight:600; font-size:.78rem; padding:3px 7px; border-radius:4px;
+    text-transform:uppercase; letter-spacing:.3px; white-space:nowrap;
+  }
+  .obs-type.initial { background:#e3f2fd; color:#1565c0; }
+  .obs-type.phase { background:#e8f5e9; color:#2e7d32; }
+  .obs-type.conclusion { background:#fff3e0; color:#e65100; }
+  .datetime-input {
+    font-family:var(--font-mono); font-size:.8rem;
+    background:var(--header-bg); border:1px solid var(--border);
+    padding:4px 8px; border-radius:4px; color:var(--ink); min-width:150px;
+  }
+  .btn-delete-obs {
+    margin-left:auto; padding:4px 8px; font-size:.75rem;
+    background:transparent; color:var(--danger); border:1px solid var(--danger);
+    border-radius:4px; cursor:pointer;
+  }
+  .btn-delete-obs:hover {
+    background:var(--danger); color:#fff;
+  }
+
+  /* ---------- IMAGES ---------- */
+  .img-zone {
+    border:2px dashed var(--border); border-radius:8px; padding:20px;
+    text-align:center; margin:10px 0; background:var(--header-bg);
+    min-height:110px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; position:relative; overflow:hidden;
+  }
+  .img-zone.has-img { padding:0; border-style:solid; }
+  .img-zone img { max-width:100%; max-height:220px; display:block; object-fit:contain; }
+  .img-zone .placeholder {
+    color:var(--ink-light); font-size:.85rem;
+    display:flex; flex-direction:column; align-items:center; gap:6px; pointer-events:none;
+  }
+  .img-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; z-index:2; }
+  .img-actions { position:relative; z-index:3; display:flex; gap:6px; justify-content:center; width:100%; margin-top:8px; flex-wrap:wrap; }
+  .img-actions button { flex:1; max-width:150px; }
+
+  /* ---------- ÉCRITURE AVEC SCAFFOLDING ---------- */
+  .text-zone { position:relative; }
+  .scaffolding-select {
+    width:100%; padding:8px 12px; border:1px solid var(--border);
+    border-radius:6px; background:var(--bg-paper); color:var(--ink-light);
+    font-size:.85rem; margin-bottom:6px; cursor:pointer;
+  }
+  .scaffolding-select:focus { outline:2px solid var(--accent); color:var(--ink); }
+  .text-zone textarea {
+    width:100%; min-height:70px; padding:10px 12px; border:1px solid var(--border);
+    border-radius:6px; background:var(--bg-paper); color:var(--ink);
+    font-family:inherit; font-size:1rem; resize:vertical; line-height:1.5;
+  }
+  .text-zone textarea:focus {
+    outline:2px solid var(--accent); border-color:var(--accent);
+  }
+  .char-count {
+    font-size:.7rem; color:var(--ink-light); text-align:right; margin-top:4px;
+  }
+
+  /* ---------- ZONE PHASES (Sortable) ---------- */
+  #phases-container { min-height:100px; }
+  .add-phase-btn { width:100%; margin-top:10px; justify-content:center; }
+
+  /* ---------- GRILLAGE TRIGGERS ---------- */
+  .triggers-grid {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr));
+    gap:14px; margin-top:12px;
+  }
+  .trigger-card {
+    border:2px solid var(--trigger-border);
+    border-radius:10px; padding:16px; text-align:center;
+    background:var(--trigger-bg); cursor:pointer;
+    transition:.2s; position:relative; overflow:hidden;
+  }
+  .trigger-card:hover { border-color:var(--accent); background:#d4e8dc; transform:translateY(-2px); }
+  .trigger-card .emoji { font-size:2.2rem; margin-bottom:8px; }
+  .trigger-card .title { font-size:.95rem; font-weight:600; color:var(--ink); min-height:2.6em; }
+  .trigger-card .teaser { font-size:.75rem; color:var(--ink-light); margin-top:6px; line-height:1.4; }
+
+  /* ---------- STATUT ---------- */
+  .lab-footer {
+    margin-top:24px; padding:12px 0;
+    font-size:.8rem; color:var(--ink-light);
+    display:flex; justify-content:space-between; align-items:center;
+    border-top:1px solid var(--border);
+  }
+  .status-dot {
+    width:8px; height:8px; border-radius:50%; background:var(--accent);
+    display:inline-block; margin-right:6px; animation:pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; } 50% { opacity:.4; }
+  }
+
+  /* ---------- MODALES ---------- */
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index:2000; opacity:0; visibility:hidden; transition:.3s;
+  }
+  .modal-overlay.active { opacity:1; visibility:visible; }
+  .modal-box {
+    background:var(--bg-paper); padding:24px; border-radius:var(--radius);
+    max-width:460px; width:95%; box-shadow:0 10px 30px rgba(0,0,0,.15);
+    border:1px solid var(--border); transform:scale(.95); transition:.3s;
+  }
+  .modal-overlay.active .modal-box { transform:scale(1); }
+  .modal-box h3 {
+    margin-top:0; color:var(--accent); margin-bottom:20px;
+    padding-bottom:12px; border-bottom:1px solid var(--border);
+  }
+  .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+
+  /* ---------- MODE PYP (IB) ---------- */
+  :root { --pyp:#1565c0; --pyp-soft:rgba(21,101,192,.08); }
+  @media (prefers-color-scheme: dark) { :root { --pyp:#64b5f6; --pyp-soft:rgba(100,181,246,.12); } }
+  .pyp-only, .pyp-only-inline { display:none !important; }
+  body.pyp-mode .pyp-only { display:block !important; }
+  body.pyp-mode .pyp-only-inline { display:inline-flex !important; }
+  body.pyp-mode #blockPYP { border-color:var(--pyp); }
+  #blockPYP .section-header h2 { color:var(--pyp); }
+  .pyp-badge { background:var(--pyp) !important; }
+  .pyp-subtitle { font-size:.75rem; color:var(--ink-light); }
+  .pyp-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .pyp-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .pyp-field-wide { grid-column:1 / -1; }
+  .pyp-label { font-size:.75rem; font-weight:600; color:var(--ink-light); text-transform:uppercase; letter-spacing:.3px; }
+  .pyp-label small { text-transform:none; font-weight:400; }
+  .pyp-input {
+    width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px;
+    background:var(--bg-paper); color:var(--ink); font-family:inherit; font-size:.95rem; resize:vertical;
+  }
+  .pyp-input:focus { outline:2px solid var(--accent); border-color:var(--accent); }
+  .pyp-chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .pyp-chip {
+    display:inline-flex; align-items:flex-start; gap:6px; padding:6px 10px;
+    border:1px solid var(--border); border-radius:18px; background:var(--bg-paper);
+    cursor:pointer; font-size:.85rem; line-height:1.3; transition:.15s;
+  }
+  .pyp-chip:hover { border-color:var(--pyp); }
+  .pyp-chip input { margin-top:2px; accent-color:var(--pyp); }
+  .pyp-chip small { display:block; font-size:.7rem; color:var(--ink-light); }
+  .pyp-chip:has(input:checked), .pyp-chip.pdf-checked { border-color:var(--pyp); background:var(--pyp-soft); }
+  .pyp-axes { display:flex; flex-direction:column; gap:6px; }
+  .pyp-axe-row { display:flex; align-items:center; gap:8px; }
+  .pyp-axe-num {
+    flex:0 0 26px; height:26px; border-radius:50%; background:var(--pyp); color:#fff;
+    font-weight:700; font-size:.8rem; display:flex; align-items:center; justify-content:center;
+  }
+  #btnAddAxe { align-self:flex-start; }
+  .pyp-axe-remove:disabled, #btnAddAxe:disabled { opacity:.4; cursor:not-allowed; }
+  .pyp-cycle-select {
+    padding:3px 6px; border:1px solid var(--border); border-radius:4px;
+    background:var(--bg-paper); color:var(--ink); font-size:.78rem; font-family:inherit;
+  }
+  body.pyp-mode .observation-block[data-type="phase"] { border-left:5px solid var(--cycle-color, var(--border)); }
+  body.pyp-mode .observation-block[data-type="phase"][data-cycle]:not([data-cycle=""]) .obs-type.phase { background:var(--cycle-color); color:#fff; }
+  .pyp-cycle-hint { font-size:.8rem; color:var(--ink-light); font-style:italic; margin:-2px 0 6px; }
+  .pyp-tag { font-size:.75rem; color:var(--pyp); font-weight:600; margin-left:4px; }
+  .phase-header-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .phase-header-actions .add-phase-btn { width:auto; margin-top:0; }
+  .pyp-profil { margin-top:4px; padding:12px; border:1px dashed var(--pyp); border-radius:var(--radius); background:var(--pyp-soft); }
+  .pyp-profil .pyp-label { margin-bottom:8px; text-transform:none; font-size:.9rem; color:var(--pyp); }
+  .obs-type.action { background:#fce4ec; color:#ad1457; }
+  .pyp-action-extra { display:flex; flex-direction:column; gap:10px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); }
+  .pyp-check { display:inline-flex; align-items:center; gap:8px; font-weight:500; cursor:pointer; }
+  .pyp-check input { width:18px; height:18px; accent-color:var(--accent); }
+  .pyp-help { display:block; margin-top:8px; font-size:.75rem; color:var(--ink-light); line-height:1.4; }
+  .status-wrap { display:inline-flex; align-items:center; }
+  .lab-footer { flex-wrap:wrap; gap:8px; }
+  .pdf-chip { display:inline-block; padding:2px 8px; border-radius:10px; background:var(--pyp-soft); color:var(--pyp); font-size:.78rem; font-weight:600; }
+  .pdf-value { font-weight:500; }
+  @media (max-width:600px) { .pyp-grid { grid-template-columns:1fr; } }
+
+  /* ---------- LARGEUR, GUIDE, LIVRABLES ---------- */
+  body.largeur-confort .app-container { max-width:920px; }
+  body.pyp-mode #progressWrap { display:flex !important; }
+  .progress-wrap { align-items:center; gap:10px; margin:0 0 18px; }
+  .progress-bar { flex:1; height:10px; border-radius:6px; background:var(--header-bg); border:1px solid var(--border); overflow:hidden; }
+  .progress-bar span { display:block; height:100%; width:0; background:var(--accent); transition:width .35s; }
+  .progress-label { font-size:.78rem; color:var(--ink-light); white-space:nowrap; }
+  .modal-box.modal-large { max-width:1100px; width:min(96vw,1100px); max-height:88vh; overflow:auto; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; border-bottom:1px solid var(--border); }
+  .tab-btn { padding:8px 14px; border:1px solid var(--border); border-bottom:none; border-radius:8px 8px 0 0; background:var(--header-bg); color:var(--ink); cursor:pointer; font-family:inherit; font-size:.85rem; }
+  .tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  .periode-title { margin:18px 0 10px; font-size:1rem; color:var(--accent); border-bottom:1px solid var(--border); padding-bottom:6px; }
+  .seance-card { border:1px solid var(--border); border-left:5px solid var(--cycle-color, var(--accent)); border-radius:8px; padding:12px 14px; margin-bottom:10px; background:var(--phase-bg); }
+  .seance-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .seance-num { background:var(--cycle-color, var(--accent)); color:#fff; border-radius:6px; padding:2px 8px; font-weight:700; font-size:.8rem; }
+  .seance-title { font-weight:600; }
+  .seance-etape { font-size:.72rem; padding:2px 8px; border-radius:10px; background:var(--pyp-soft); color:var(--pyp); font-weight:600; }
+  .seance-actions { margin-left:auto; display:flex; align-items:center; gap:10px; }
+  .seance-check { display:inline-flex; align-items:center; gap:6px; font-size:.78rem; color:var(--ink-light); cursor:pointer; }
+  .seance-check input { width:16px; height:16px; accent-color:var(--accent); }
+  .seance-body { margin-top:8px; font-size:.88rem; line-height:1.55; }
+  .seance-body h5 { margin:10px 0 2px; font-size:.72rem; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-light); }
+  .seance-body ul { margin:0 0 4px 20px; }
+  .seance-livrable { margin-top:10px; font-size:.8rem; color:var(--accent); font-weight:600; }
+  .seance-card.done { opacity:.7; }
+  .seance-card.done .seance-title { text-decoration:line-through; }
+  .guide-intro { font-size:.92rem; line-height:1.65; }
+  .guide-intro p { margin-bottom:10px; }
+  .guide-intro h4 { margin:16px 0 6px; color:var(--accent); font-size:1rem; }
+  .guide-intro ul { margin:0 0 10px 20px; }
+  .doc-field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .doc-hint { font-size:.8rem; color:var(--ink-light); line-height:1.5; margin-bottom:12px; }
+  .doc-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .doc-render { width:820px; padding:40px 44px; background:#fff; color:#1a1a1a; font-family:var(--font-main); font-size:14px; line-height:1.55; }
+  .doc-render h1 { font-size:22px; color:#2e7d32; margin-bottom:2px; }
+  .doc-render h2 { font-size:15px; color:#2e7d32; margin:22px 0 8px; border-bottom:1px solid #d9d0b8; padding-bottom:4px; }
+  .doc-render .doc-sub { font-size:12px; color:#666; margin-bottom:18px; }
+  .doc-render ul { margin:0 0 10px 20px; }
+  .doc-render p { margin-bottom:10px; white-space:pre-wrap; }
+  .doc-render .doc-box { border:1px solid #d9d0b8; border-radius:6px; padding:12px 14px; margin-bottom:12px; background:#fdfcf5; }
+  .doc-render .doc-line { border-bottom:1px dotted #aaa; height:22px; margin-bottom:6px; }
+  .doc-render .doc-chip { display:inline-block; border:1px solid #1565c0; color:#1565c0; border-radius:12px; padding:2px 10px; font-size:12px; margin:0 6px 6px 0; }
+  .doc-render img { max-width:100%; max-height:260px; border:1px solid #ddd; border-radius:4px; margin-bottom:10px; }
+  .doc-render .doc-foot { margin-top:26px; font-size:11px; color:#888; border-top:1px solid #eee; padding-top:8px; }
+  @media (min-width:1250px) {
+    body.pyp-mode:not(.largeur-confort) #phases-container { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  }
+
+  /* ---------- MEDIA & PRINT ---------- */
+  @media (max-width:600px) {
+    body { padding:10px; background:#f5f5f5; }
+    .app-container { border-radius:0; padding:16px; }
+    .lab-header { flex-direction:column; gap:12px; margin:-16px -16px 16px -16px; }
+    .compact-meta { flex-direction:column; align-items:stretch; }
+    .img-actions { flex-direction:column; align-items:center; }
+    .img-actions button { max-width:100%; }
+  }
+
+  @media print {
+    body { background:white; padding:0; }
+    .app-container { box-shadow:none; border:none; border-radius:0; }
+    .lab-header, .btn, .scaffolding-select, .img-zone input,
+    .img-actions, .btn-delete-obs, .add-phase-btn, .lab-footer,
+    .modal-overlay, .compact-meta { display:none !important; }
+    .section-block { break-inside:avoid; page-break-inside:avoid; }
+    .img-zone.has-img { border:1px solid #ccc; min-height:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container" id="appContainer">
+
+  <!-- ========== EN-TÊTE ========== -->
+  <header class="lab-header">
+    <h1 class="lab-title"><span class="icon">🧪</span> Cahier de Laboratoire</h1>
+    <div class="header-actions">
+      <button class="btn btn-secondary" id="btnNewExp" title="Nouvelle expérience (efface tout)">➕ Nouvelle</button>
+      <button class="btn btn-primary" id="btnSaveLocal" title="Sauvegarder manuellement">💾 Sauver</button>
+      <button class="btn btn-primary" id="btnExportPDF" title="Exporter en PDF">📄 Exporter PDF</button>
+      <button class="btn btn-secondary pyp-only-inline" id="btnGuide" title="Guide enseignant et programmation des séances">📘 Guide</button>
+      <button class="btn btn-secondary pyp-only-inline" id="btnLivrables" title="Produire un document (carnet d'étape, lettre aux parents…)">📦 Livrables</button>
+      <button class="btn btn-icon" id="btnSettings" title="Paramètres">⚙️</button>
+    </div>
+  </header>
+
+  <!-- ========== AVANCEMENT (mode PYP) ========== -->
+  <div class="progress-wrap pyp-only" id="progressWrap">
+    <span class="progress-label" id="progressLabel">Avancement du projet</span>
+    <div class="progress-bar"><span id="progressFill"></span></div>
+    <span class="progress-label" id="progressDetail"></span>
+  </div>
+
+  <!-- ========== MÉTADONNÉES (COMPACTES) ========== -->
+  <div class="compact-meta">
+    <div class="meta-group">
+      <label for="expTitle">Titre</label>
+      <input type="text" id="expTitle" placeholder="Ex: Germination du haricot" value="">
+    </div>
+    <div class="meta-group">
+      <label for="expDate">Date</label>
+      <input type="date" id="expDate" value="">
+    </div>
+    <div class="meta-group">
+      <label for="expAuthor">Élève / Binôme</label>
+      <input type="text" id="expAuthor" placeholder="Prénom(s)" value="">
+    </div>
+    <div class="meta-group">
+      <label for="expTheme">Thème</label>
+      <select id="expTheme">
+        <option value="">-- Choisir --</option>
+        <option value="Vivant">🌱 Le Vivant (Biologie)</option>
+        <option value="Matiere">⚗️ Matière (Chimie/Physique)</option>
+        <option value="Energie">⚡ Énergie / Électricité</option>
+        <option value="Tech">🛠️ Technologie / Objets</option>
+        <option value="Terre">🌍 Terre / Espace</option>
+        <option value="Temps">⏳ Le Temps (mesure, durée, espace‑temps)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ========== CADRE PYP (visible en mode PYP uniquement) ========= -->
+  <section class="section-block pyp-only" id="blockPYP">
+    <div class="section-header">
+      <h2><span class="badge pyp-badge">IB</span> 🌐 Cadre PYP de l'investigation</h2>
+      <span class="pyp-subtitle">Programme primaire (PYP) — à construire avec l'enseignant</span>
+    </div>
+    <div class="section-content pyp-grid">
+      <div class="pyp-field pyp-field-wide" data-pyp-row="theme">
+        <label class="pyp-label" for="pypTheme">Thème transdisciplinaire</label>
+        <select id="pypTheme" class="pyp-input"><option value="">-- Choisir un thème --</option></select>
+      </div>
+      <div class="pyp-field pyp-field-wide" data-pyp-row="idee">
+        <label class="pyp-label" for="pypIdeeCentrale">Idée centrale</label>
+        <textarea id="pypIdeeCentrale" class="pyp-input" rows="2" maxlength="400" placeholder="Ex. : Le temps est à la fois une expérience que l'on ressent et une grandeur que la science mesure et cherche encore à comprendre."></textarea>
+      </div>
+      <div class="pyp-field pyp-field-wide" data-pyp-row="concepts">
+        <span class="pyp-label">Concepts clés mobilisés</span>
+        <div class="pyp-chips" id="pypConcepts"></div>
+      </div>
+      <div class="pyp-field pyp-field-wide" data-pyp-row="axes">
+        <span class="pyp-label">Axes de recherche <small>(3 maximum)</small></span>
+        <div class="pyp-axes" id="pypAxesList"></div>
+        <button type="button" class="btn btn-small btn-secondary" id="btnAddAxe">➕ Ajouter un axe</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SCÉNARIOS (TRIGGERS) – APRES LE THEME ========= -->
+  <section class="section-block" id="blockTriggers">
+    <div class="section-header">
+      <h2><span class="badge" style="background:#ffb300;color:#1a202c;">💡</span> Scénarios d'enquête (choisissez une accroche)</h2>
+      <span style="font-size:.75rem; color:var(--ink-light);">Cliquez sur une carte pour la charger.</span>
+    </div>
+    <div class="triggers-grid" id="triggersGrid"></div>
+    <div style="text-align:center; margin-top:8px;">
+      <button class="btn btn-small btn-primary" id="btnUseTrigger">✨ Utiliser ce scénario</button>
+    </div>
+  </section>
+
+  <!-- ========== CONSTRUCTIONS INITIALES ========= -->
+  <section class="section-block" id="blockInitial">
+    <div class="section-header"><h2><span class="badge">1</span> Conceptions initiales / Hypothèses</h2></div>
+    <div class="section-content">
+      <div class="observation-block" data-type="initial">
+        <div class="obs-header">
+          <span class="obs-type initial">Idées de départ</span>
+          <input type="datetime-local" class="datetime-input" data-field="datetime">
+        </div>
+        <div class="img-zone" data-field="image">
+          <div class="placeholder">📷 Photo optionnelle (schéma, mind‑map, résultat)</div>
+          <input type="file" accept="image/*" capture="environment">
+        </div>
+        <div class="text-zone">
+          <select class="scaffolding-select" data-target="textarea">
+            <option value="" disabled selected>💡 Début de phrase...</option>
+            <option value="Je pense que ">Je pense que…</option>
+            <option value="Selon moi, ">Selon moi,…</option>
+            <option value="Je prévois que ">Je prévois que…</option>
+            <option value="Si ... alors ... ">Si … alors …</option>
+            <option value="Cela me fait penser à ">Cela me fait penser à…</option>
+            <option value="J'imagine que ">J'imagine que…</option>
+          </select>
+          <textarea data-field="text" placeholder="Écrivez vos idées, vos hypothèses, vos premières impressions avant l’expérience..."></textarea>
+          <div class="char-count"><span data-count="0">0</span> caractères</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PHASES ========= -->
+  <section class="section-block" id="blockPhases">
+    <div class="section-header">
+      <h2><span class="badge">2</span> Phases d'investigation <span class="pyp-only-inline pyp-tag">· cycle PYP</span> <span id="phaseCount" style="font-size:.85rem; color:var(--ink-light);">(0 phase)</span></h2>
+      <div class="phase-header-actions">
+        <button class="btn btn-small btn-secondary pyp-only-inline" id="btnPypCycle" type="button" title="Ajoute les étapes du cycle d'investigation qui manquent">⚡ Créer les 6 étapes</button>
+        <button class="btn btn-small btn-secondary add-phase-btn" id="btnAddPhase" type="button">➕ Ajouter une phase</button>
+      </div>
+    </div>
+    <div class="section-content" id="phases-container"></div>
+  </section>
+
+  <!-- ========== CONCLUSION ========= -->
+  <section class="section-block" id="blockConclusion">
+    <div class="section-header"><h2><span class="badge">3</span> Conclusion / Bilan</h2></div>
+    <div class="section-content">
+      <div class="observation-block" data-type="conclusion">
+        <div class="obs-header">
+          <span class="obs-type conclusion">Conclusion</span>
+          <input type="datetime-local" class="datetime-input" data-field="datetime">
+        </div>
+        <div class="img-zone" data-field="image">
+          <div class="placeholder">📷 Photo du résultat final, tableau, schéma récapitulatif...</div>
+          <input type="file" accept="image/*" capture="environment">
+        </div>
+        <div class="text-zone">
+          <select class="scaffolding-select" data-target="textarea">
+            <option value="" disabled selected>✅ Début de phrase...</option>
+            <option value="J'ai observé que ">J'ai observé que…</option>
+            <option value="Mon hypothèse était ">Mon hypothèse était (juste / fausse) car…</option>
+            <option value="J'ai appris que ">J'ai appris que…</option>
+            <option value="Le résultat montre que ">Le résultat montre que…</option>
+            <option value="Pour améliorer l'expérience ">Pour améliorer l'expérience, je pourrais…</option>
+            <option value="Cela m'étonne car ">Cela m'étonne car…</option>
+          </select>
+          <textarea data-field="text" placeholder="Rédigez votre conclusion : résultats, validation, ce que vous retenez..."></textarea>
+          <div class="char-count"><span data-count="0">0</span> caractères</div>
+        </div>
+      </div>
+      <div class="pyp-only pyp-profil">
+        <div class="pyp-label">🎓 Profil de l'apprenant — quels traits ai-je mobilisés ?</div>
+        <div class="pyp-chips" id="pypProfil"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ACTION / TRANSMISSION (mode PYP) ========= -->
+  <section class="section-block pyp-only" id="blockAction">
+    <div class="section-header"><h2><span class="badge">4</span> 🤝 Action / Transmission</h2></div>
+    <div class="section-content">
+      <div class="observation-block" data-type="action">
+        <div class="obs-header">
+          <span class="obs-type action">Agir</span>
+          <input type="datetime-local" class="datetime-input" data-field="datetime">
+        </div>
+        <div class="img-zone" data-field="image">
+          <div class="placeholder">📷 Photo de l'atelier, affiche, support de présentation…</div>
+          <input type="file" accept="image/*" capture="environment">
+        </div>
+        <div class="text-zone">
+          <select class="scaffolding-select" data-target="textarea">
+            <option value="" disabled selected>🤝 Début de phrase...</option>
+            <option value="Pour transmettre ce que j'ai appris, j'ai choisi ">Pour transmettre, j'ai choisi…</option>
+            <option value="J'ai expliqué à ">J'ai expliqué à…</option>
+            <option value="Pour les aider à comprendre, j'ai utilisé ">Pour les aider à comprendre, j'ai utilisé…</option>
+            <option value="Les élèves ont compris que ">Les élèves ont compris que…</option>
+            <option value="Ce qui a été difficile à expliquer, c'est ">Ce qui a été difficile à expliquer, c'est…</option>
+            <option value="La prochaine fois, je pourrais ">La prochaine fois, je pourrais…</option>
+          </select>
+          <textarea data-field="text" placeholder="Qu'as-tu fait avec ce que tu as appris ? Comment l'as-tu transmis aux autres ?"></textarea>
+          <div class="char-count"><span data-count="0">0</span> caractères</div>
+        </div>
+        <div class="pyp-action-extra">
+          <div class="pyp-field" data-pdf-optional>
+            <label class="pyp-label" for="pypAtelier">Atelier / présentation de tutorat prévue</label>
+            <input type="text" id="pypAtelier" class="pyp-input" maxlength="300" placeholder="Ex. : mini-atelier « Fabriquer un sablier » avec 3 élèves de CM1, jeudi">
+          </div>
+          <div class="pyp-restitution" data-pyp-row="restitution">
+            <label class="pyp-check"><input type="checkbox" id="pypRestitution"> Restitution à d'autres élèves effectuée</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ASSISTANT IA ========= -->
+  <section class="section-block" id="blockIA" style="display:none; margin-top:24px;">
+    <div class="section-header">
+      <h2><span class="badge" style="background:#1976d2;color:#fff;">🤖</span> Assistant IA (Génération de problématiques & aide à la question)</h2>
+    </div>
+    <div style="background:#f8f9fa; padding:14px; border-radius:8px; margin-bottom:14px;">
+      <label class="form-label">Modèle IA autorisé</label>
+      <select id="aiModelSelect" class="form-select">
+        <option value="none">Aucun (local)</option>
+        <option value="openai">OpenAI GPT‑4</option>
+        <option value="anthropic">Anthropic Claude</option>
+      </select>
+      <small style="color:var(--ink-light); display:block; margin-top:6px;">
+        La clé API est stockée dans le navigateur (LocalStorage). En usage pédagogique, utilisez un proxy dédié.
+      </small>
+    </div>
+    <textarea id="aiPromptInput" class="form-textarea" placeholder="Ex: « Génère une problématique de CM2 sur le sujet des plantes grimpantes, sous forme d’accroche narrative. »"></textarea>
+    <div style="margin-top:10px;">
+      <button class="btn btn-primary" id="btnAskAI" style="width:100%;">🔎 Demander à l'IA</button>
+      <div id="aiResponse" style="margin-top:12px; padding:10px; border-radius:6px; font-size:.9rem; white-space:pre-wrap; background:#f0f4fa; display:none;"></div>
+    </div>
+  </section>
+
+  <!-- ========== PIED DE PAGE ========= -->
+  <footer class="lab-footer">
+    <span class="status-wrap"><span class="status-dot" id="statusDot"></span><span id="statusText">Chargement…</span></span>
+    <span>Enregistré automatiquement dans le navigateur (LocalStorage). <a href="javascript:void(0)" id="linkClearAll" style="color:var(--accent); text-decoration:underline;">Effacer tout</a></span>
+    <span style="font-size:.7rem; opacity:.7;">Version 2.4 — Mode PYP (IB) : guide enseignant, 14 séances, livrables PDF, sauvegarde fichier</span>
+  </footer>
+
+</div>
+
+<!-- ==== MODALES ==== -->
+<div class="modal-overlay" id="modalNewExp">
+  <div class="modal-box">
+    <h3>⚠️ Nouvelle expérience ?</h3>
+    <p>Cela supprimera <strong>toutes les données actuelles</strong> de cette page.<br>Assurez-vous d'avoir exporté un PDF.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modalCancel">Annuler</button>
+      <button class="btn btn-danger" id="modalConfirm">Oui, tout effacer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalSettings">
+  <div class="modal-box">
+    <h3>⚙️ Paramètres IA & Scénarios</h3>
+
+    <div style="margin-bottom:16px;">
+      <label class="form-label">Modules activés</label>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <label><input type="checkbox" id="chkTriggers"> Scénarios d'enquête</label>
+        <label><input type="checkbox" id="chkIA"> Assistant IA</label>
+        <label><input type="checkbox" id="chkPYP"> 🌐 Mode PYP (IB)</label>
+        <label><input type="checkbox" id="chkLargeur"> 📐 Largeur limitée (lecture)</label>
+      </div>
+    </div>
+
+    <small class="pyp-help">Le mode PYP ajoute le cadre de l'investigation (thème transdisciplinaire, idée centrale, concepts clés, axes de recherche), le cycle d'investigation sur les phases, le profil de l'apprenant et le bloc Action / Transmission. Désactivé, le cahier redevient identique et les données PYP sont conservées.</small>
+
+    <hr style="margin:16px 0;">
+    <div id="settingsIAContent" style="margin-top:8px;">
+      <!-- Paramètres IA remplis via JS -->
+    </div>
+
+    <hr style="margin:16px 0;">
+    <div>
+      <label class="form-label">Sauvegarde de sécurité</label>
+      <div class="doc-actions">
+        <button class="btn btn-secondary" type="button" id="btnExportJSON">💾 Enregistrer dans un fichier</button>
+        <button class="btn btn-secondary" type="button" id="btnImportJSON">📂 Ouvrir un fichier</button>
+        <input type="file" id="fileImportJSON" accept="application/json,.json" style="display:none">
+      </div>
+      <small class="pyp-help">Le fichier .json contient tout le cahier (textes, photos, cadre PYP). À garder sur une clé USB ou dans le dossier de la classe : il protège des pertes si le navigateur est nettoyé.</small>
+    </div>
+
+    <div style="margin-top:20px; padding-top:12px; border-top:1px solid var(--border);">
+      <button class="btn btn-secondary" id="settingsCancel">Annuler</button>
+      <button class="btn btn-primary" id="settingsSave">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==== MODALE GUIDE ENSEIGNANT ==== -->
+<div class="modal-overlay" id="modalGuide">
+  <div class="modal-box modal-large">
+    <h3>📘 Guide enseignant — projet PYP</h3>
+    <div class="tabs" data-tabs="guide">
+      <button type="button" class="tab-btn active" data-tab="guideIntro">Comprendre le PYP</button>
+      <button type="button" class="tab-btn" data-tab="guideProg">Programmation (14 séances)</button>
+      <button type="button" class="tab-btn" data-tab="guideMemo">Aide-mémoire de séance</button>
+    </div>
+
+    <div class="tab-panel active" id="guideIntro">
+      <div class="guide-intro" id="guideIntroContent"></div>
+    </div>
+
+    <div class="tab-panel" id="guideProg">
+      <div class="doc-hint">Cochez une séance quand elle est faite : l'avancement du projet se met à jour. « Ouvrir l'étape » crée la phase correspondante dans le cahier si elle n'existe pas encore.</div>
+      <div id="guideProgList"></div>
+    </div>
+
+    <div class="tab-panel" id="guideMemo">
+      <div class="guide-intro" id="guideMemoContent"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" type="button" data-doc="guide" data-format="pdf">📄 Guide en PDF</button>
+      <button class="btn btn-secondary" type="button" data-doc="guide" data-format="html">🌐 Guide en HTML</button>
+      <button class="btn btn-primary" type="button" id="guideClose">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==== MODALE LIVRABLES ==== -->
+<div class="modal-overlay" id="modalLivrables">
+  <div class="modal-box modal-large">
+    <h3>📦 Livrables du projet</h3>
+
+    <div class="doc-field">
+      <label class="pyp-label">En-tête des documents (école, classe, enseignant)</label>
+      <div class="pyp-grid">
+        <div class="pyp-field"><input type="text" id="docEcole" class="pyp-input" maxlength="120" placeholder="École"></div>
+        <div class="pyp-field"><input type="text" id="docClasse" class="pyp-input" maxlength="80" placeholder="Classe (ex. CM1/CM2)"></div>
+        <div class="pyp-field pyp-field-wide"><input type="text" id="docEnseignant" class="pyp-input" maxlength="120" placeholder="Nom de l'enseignant"></div>
+      </div>
+    </div>
+
+    <div class="doc-hint">Chaque document existe en deux formats : le <strong>PDF</strong> pour imprimer, la <strong>version HTML</strong> pour consulter dans un navigateur, envoyer par courriel ou déposer sur l'ENT. La version HTML fonctionne sans Internet et s'imprime aussi.</div>
+
+    <div class="tabs" data-tabs="livrables">
+      <button type="button" class="tab-btn active" data-tab="docCarnet">Carnet d'étape</button>
+      <button type="button" class="tab-btn" data-tab="docResti">Fiche de restitution</button>
+      <button type="button" class="tab-btn" data-tab="docBilan">Bilan PYP</button>
+      <button type="button" class="tab-btn" data-tab="docParents">Lettre aux parents</button>
+      <button type="button" class="tab-btn" data-tab="docDossier">Dossier complet</button>
+    </div>
+
+    <div class="tab-panel active" id="docCarnet">
+      <div class="doc-hint">Un document par étape du cycle : ce que l'élève a produit à cette étape, photos comprises. À imprimer et coller dans le cahier, ou à envoyer à la famille.</div>
+      <div class="doc-field">
+        <label class="pyp-label" for="carnetEtape">Étape à éditer</label>
+        <select id="carnetEtape" class="pyp-input"></select>
+      </div>
+      <div class="doc-actions">
+        <button class="btn btn-primary" type="button" data-doc="carnet" data-format="pdf">📄 Générer le carnet d'étape (PDF)</button>
+        <button class="btn btn-secondary" type="button" data-doc="carnet" data-format="html">🌐 Version HTML</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="docResti">
+      <div class="doc-hint">Support que l'élève garde en main pour présenter à ses camarades. Remplissez-le avec lui à la séance de préparation.</div>
+      <div class="doc-field"><label class="pyp-label" for="restiQuestion">Question de départ annoncée au public</label>
+        <input type="text" id="restiQuestion" class="pyp-input" maxlength="200" placeholder="Ex. : Comment passe le temps ?"></div>
+      <div class="doc-field"><label class="pyp-label" for="restiMsg1">Message clé 1</label><input type="text" id="restiMsg1" class="pyp-input" maxlength="200"></div>
+      <div class="doc-field"><label class="pyp-label" for="restiMsg2">Message clé 2</label><input type="text" id="restiMsg2" class="pyp-input" maxlength="200"></div>
+      <div class="doc-field"><label class="pyp-label" for="restiMsg3">Message clé 3</label><input type="text" id="restiMsg3" class="pyp-input" maxlength="200"></div>
+      <div class="doc-field"><label class="pyp-label" for="restiMots">Mots difficiles à expliquer (et comment les dire simplement)</label>
+        <textarea id="restiMots" class="pyp-input" rows="2" maxlength="400"></textarea></div>
+      <div class="doc-field"><label class="pyp-label" for="restiMateriel">Matériel / démonstration prévue</label>
+        <textarea id="restiMateriel" class="pyp-input" rows="2" maxlength="400"></textarea></div>
+      <div class="doc-field"><label class="pyp-label" for="restiQuestionsPublic">Questions que je pose au public</label>
+        <textarea id="restiQuestionsPublic" class="pyp-input" rows="2" maxlength="400"></textarea></div>
+      <div class="doc-actions">
+        <button class="btn btn-primary" type="button" data-doc="resti" data-format="pdf">📄 Générer la fiche de restitution (PDF)</button>
+        <button class="btn btn-secondary" type="button" data-doc="resti" data-format="html">🌐 Version HTML</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="docBilan">
+      <div class="doc-hint">Récapitulatif de fin de projet : cadre PYP, concepts clés, profil de l'apprenant, étapes franchies, action réalisée.</div>
+      <div class="doc-field"><label class="pyp-label" for="bilanCommentaire">Commentaire de l'enseignant</label>
+        <textarea id="bilanCommentaire" class="pyp-input" rows="4" maxlength="1500" placeholder="Ce que l'élève a montré pendant le projet : autonomie, qualité du questionnement, capacité à expliquer aux autres…"></textarea></div>
+      <div class="doc-actions">
+        <button class="btn btn-primary" type="button" data-doc="bilan" data-format="pdf">📄 Générer le bilan PYP (PDF)</button>
+        <button class="btn btn-secondary" type="button" data-doc="bilan" data-format="html">🌐 Version HTML</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="docParents">
+      <div class="doc-hint">Point d'étape destiné à la famille, rédigé automatiquement à partir du cahier. Relisez et complétez avant d'imprimer.</div>
+      <div class="doc-field"><label class="pyp-label" for="parentsMot">Mot personnel (facultatif)</label>
+        <textarea id="parentsMot" class="pyp-input" rows="3" maxlength="1200"></textarea></div>
+      <div class="doc-field"><label class="pyp-label" for="parentsAide">Comment aider à la maison</label>
+        <textarea id="parentsAide" class="pyp-input" rows="3" maxlength="800" placeholder="Ex. : regarder ensemble une horloge à balancier, chronométrer une activité, parler des calendriers de la famille…"></textarea></div>
+      <div class="doc-actions">
+        <button class="btn btn-primary" type="button" data-doc="parents" data-format="pdf">📄 Générer la lettre aux parents (PDF)</button>
+        <button class="btn btn-secondary" type="button" data-doc="parents" data-format="html">🌐 Version HTML</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="docDossier">
+      <div class="doc-hint">Le dossier complet réunit le cadre PYP, toutes les étapes du cycle avec leurs photos, la conclusion, le profil de l'apprenant et l'action de transmission. C'est le document de fin de projet.</div>
+      <div class="doc-actions">
+        <button class="btn btn-primary" type="button" data-doc="dossier" data-format="pdf">📄 Générer le dossier complet (PDF)</button>
+        <button class="btn btn-secondary" type="button" data-doc="dossier" data-format="html">🌐 Version HTML</button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" type="button" id="livrablesClose">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==== SCRIPT PRINCIPAL ==== -->
+<script>
+/* ------------------------------------------------------------
+   STATE & STORAGE
+------------------------------------------------------------ */
+const STORAGE_KEY = 'labo_sciences_cm_v2.4';
+const LEGACY_STORAGE_KEYS = ['labo_sciences_cm_v2.3', 'labo_sciences_cm_v2.2']; // anciennes versions (lues, jamais effacées)
+const AI_SETTINGS_KEY = 'aiSettings_v2';
+
+/* Base de données des "triggers" (scénarios d'enquête) */
+const TRIGGERS_DB = [
+  { id: 't1', emoji: '🌱', theme: 'Vivant',  title: 'Graines mystérieuses', teaser: 'Qui sont ces petites graines trouvées sur le sol de la classe ?' },
+  { id: 't2', emoji: '⚗️', theme: 'Matiere', title: 'La couleur change !', teaser: 'Deux liquides incolores deviennent soudainement violets... Pourquoi ?' },
+  { id: 't3', emoji: '⚡', theme: 'Energie', title: 'Le mystère du circuit', teaser: 'La lampe ne s’allume pas, pourtant la pile est neuve…' },
+  { id: 't4', emoji: '🌍', theme: 'Terre',   title: 'Des empreintes insolites', teaser: 'Des empreintes de pas étranges sont trouvées dans la cour de l’école.' },
+  { id: 't5', emoji: '💧', theme: 'Matiere', title: 'L’eau qui ne veut pas sortir', teaser: 'Verser de l’eau dans un entonnoir… elle s’arrête mystérieusement.' },
+  { id: 't6', emoji: '⏳', theme: 'Temps',   title: 'Le temps qui s’étire', teaser: 'Pourquoi une minute d’attente paraît-elle plus longue qu’une minute de jeu ?' }
+];
+
+/* ---------- RÉFÉRENTIELS PYP (IB) ---------- */
+const PYP_THEMES = [
+  { value: 'qui',          label: '👤 Qui nous sommes' },
+  { value: 'espace-temps', label: '🧭 Où nous nous situons dans l’espace et le temps' },
+  { value: 'expression',   label: '🎨 Comment nous nous exprimons' },
+  { value: 'monde',        label: '⚙️ Comment le monde fonctionne' },
+  { value: 'organisation', label: '🏛️ Comment nous nous organisons' },
+  { value: 'planete',      label: '🌍 Le partage de la planète' }
+];
+const PYP_CONCEPTS = [
+  { value: 'forme',          label: 'Forme',          q: 'À quoi cela ressemble-t-il ?' },
+  { value: 'fonction',       label: 'Fonction',       q: 'Comment cela fonctionne-t-il ?' },
+  { value: 'causalite',      label: 'Causalité',      q: 'Pourquoi est-ce ainsi ?' },
+  { value: 'changement',     label: 'Changement',     q: 'Comment cela change-t-il ?' },
+  { value: 'connexion',      label: 'Connexion',      q: 'Quels liens avec d’autres choses ?' },
+  { value: 'perspective',    label: 'Perspective',    q: 'Quels sont les points de vue ?' },
+  { value: 'responsabilite', label: 'Responsabilité', q: 'Quelle est notre responsabilité ?' },
+  { value: 'reflexion',      label: 'Réflexion',      q: 'Comment le savons-nous ?' }
+];
+const PYP_CYCLE = [
+  { value: 'lancer',      icon: '🚀', label: 'Se lancer',   color: '#7e57c2', hint: 'Qu’est-ce que je sais déjà ? Quelles questions je me pose ?' },
+  { value: 'chercher',    icon: '🔍', label: 'Chercher',    color: '#1e88e5', hint: 'Où je trouve l’information ? Quelles sources, quelles mesures ?' },
+  { value: 'organiser',   icon: '🧩', label: 'Organiser',   color: '#00897b', hint: 'Comment je classe et relie mes découvertes ? Schéma, tableau…' },
+  { value: 'approfondir', icon: '🔭', label: 'Approfondir', color: '#b26a00', hint: 'Qu’est-ce qui reste à creuser ? Quels liens avec d’autres matières ?' },
+  { value: 'conclure',    icon: '✅', label: 'Conclure',    color: '#e65100', hint: 'Qu’ai-je compris ? Qu’est-ce qui reste un mystère ?' },
+  { value: 'agir',        icon: '🤝', label: 'Agir',        color: '#c2185b', hint: 'Comment je transmets ? Que puis-je faire avec ce que j’ai appris ?' }
+];
+const PYP_PROFIL = [
+  { value: 'chercheurs',     icon: '🔎', label: 'Chercheurs' },
+  { value: 'informes',       icon: '📚', label: 'Informés' },
+  { value: 'penseurs',       icon: '💭', label: 'Penseurs' },
+  { value: 'communicateurs', icon: '🗣️', label: 'Communicateurs' },
+  { value: 'integres',       icon: '⚖️', label: 'Intègres' },
+  { value: 'ouverts',        icon: '🌈', label: 'Ouverts d’esprit' },
+  { value: 'altruistes',     icon: '💚', label: 'Altruistes' },
+  { value: 'audacieux',      icon: '🦁', label: 'Audacieux' },
+  { value: 'equilibres',     icon: '☯️', label: 'Équilibrés' },
+  { value: 'reflechis',      icon: '🪞', label: 'Réfléchis' }
+];
+const PYP_MAX_AXES = 3;
+
+/* ---------- PROGRAMMATION : 14 séances sur 2 périodes ---------- */
+const PROGRAMMATION = [
+  { n:1, periode:1, cycle:'lancer', duree:'45 min', titre:'Faire sortir les questions',
+    objectif:"Recueillir ce que l'élève pense déjà du temps, sans rien corriger, et valider ses deux questions de départ.",
+    enseignant:[
+      "Annoncer le projet : « Tu vas mener une vraie recherche sur le temps pendant 14 séances, puis tu l'expliqueras aux autres. »",
+      "Ne corriger aucune idée fausse aujourd'hui : elles serviront de point de comparaison à la fin.",
+      "Noter au tableau les mots que l'élève emploie spontanément (durée, vitesse, horloge, infini…)."
+    ],
+    eleve:[
+      "Écrire tout ce qu'il pense savoir sur le temps.",
+      "Faire au brouillon une carte mentale autour du mot « temps »." ,
+      "Relire ses deux questions et dire ce qu'il espère trouver."
+    ],
+    app:[
+      "Activer le mode PYP dans ⚙️ Paramètres.",
+      "Remplir Titre, Date, Élève et choisir le thème « ⏳ Le Temps ».",
+      "Écrire dans le bloc 1 « Conceptions initiales » et photographier la carte mentale."
+    ],
+    livrable:"Aucun (la trace reste dans le cahier)." },
+
+  { n:2, periode:1, cycle:'lancer', duree:'45 min', titre:'Poser le cadre PYP avec l’élève',
+    objectif:"Transformer ses questions en un cadre de recherche : une idée centrale et trois axes.",
+    enseignant:[
+      "Expliquer avec des mots simples : le thème est la grande famille de questions, l'idée centrale est la phrase que l'on cherche à comprendre, les axes sont les trois chemins pour y arriver.",
+      "Proposer le thème « Où nous nous situons dans l'espace et le temps » et faire dire à l'élève pourquoi il convient.",
+      "Écrire l'idée centrale à deux : l'élève propose, vous reformulez, il valide."
+    ],
+    eleve:[
+      "Choisir les concepts clés qui correspondent à sa recherche (souvent Changement, Causalité, Connexion, Perspective).",
+      "Formuler ses trois axes, dont ses deux questions de départ."
+    ],
+    app:[
+      "Remplir le bloc « Cadre PYP » : thème, idée centrale, concepts clés, trois axes.",
+      "Cliquer sur « ⚡ Créer les 6 étapes » pour préparer le cycle d'investigation."
+    ],
+    livrable:"Carnet d'étape « Se lancer »." },
+
+  { n:3, periode:1, cycle:'chercher', duree:'60 min', titre:'Chercher : mesurer le temps',
+    objectif:"Découvrir comment les humains ont mesuré le temps, du gnomon à l'horloge atomique.",
+    enseignant:[
+      "Fournir 3 ou 4 sources seulement (documentaire, page Lumni ou Canopé, livre de la BCD) : trop de sources noie la recherche.",
+      "Montrer une fois comment noter une source : titre, auteur ou site, date de consultation.",
+      "Poser la question relance : « Qu'est-ce qu'on mesure vraiment quand on mesure le temps ? »"
+    ],
+    eleve:[
+      "Prendre des notes dans la phase « Chercher » du cahier.",
+      "Relever au moins trois instruments et ce qu'ils mesurent.",
+      "Noter les mots qu'il ne comprend pas."
+    ],
+    app:["Écrire dans la phase « 🔍 Chercher », ajouter une photo ou un schéma, noter les sources à la fin du texte."],
+    livrable:"Aucun." },
+
+  { n:4, periode:1, cycle:'chercher', duree:'60 min', titre:'Chercher : le temps que l’on ressent',
+    objectif:"Mettre en évidence l'écart entre le temps mesuré et le temps vécu.",
+    enseignant:[
+      "Faire une expérience simple : estimer une minute sans horloge, une fois en attendant sans rien faire, une fois pendant une activité qui plaît. Chronométrer et comparer.",
+      "Faire refaire l'expérience avec deux ou trois camarades pour avoir plusieurs mesures.",
+      "Amener la conclusion sous forme de question, pas de réponse donnée."
+    ],
+    eleve:[
+      "Noter les durées estimées et les durées réelles dans un petit tableau.",
+      "Écrire ce qu'il en déduit sur la question « Comment passe le temps ? »"
+    ],
+    app:["Nouvelle phase « 🔍 Chercher » : tableau des mesures photographié, puis interprétation écrite."],
+    livrable:"Aucun." },
+
+  { n:5, periode:1, cycle:'chercher', duree:'60 min', titre:'Chercher : qu’est-ce que l’espace-temps ?',
+    objectif:"Approcher la notion d'espace-temps avec des documents de vulgarisation adaptés.",
+    enseignant:[
+      "Choisir une ressource courte et visuelle ; couper la séance en deux : visionnage, puis reformulation.",
+      "Accepter de dire « je ne sais pas » : c'est un sujet où les scientifiques cherchent encore.",
+      "Faire distinguer ce qui est compris, ce qui est deviné et ce qui reste obscur."
+    ],
+    eleve:[
+      "Écrire trois colonnes : j'ai compris / je crois avoir compris / je ne comprends pas encore.",
+      "Formuler une nouvelle question née de la recherche."
+    ],
+    app:["Nouvelle phase « 🔍 Chercher » avec les trois colonnes et la nouvelle question."],
+    livrable:"Aucun." },
+
+  { n:6, periode:1, cycle:'organiser', duree:'60 min', titre:'Organiser ses découvertes',
+    objectif:"Relier les trois axes entre eux et proposer une première réponse aux deux questions.",
+    enseignant:[
+      "Donner une grande feuille : au centre l'idée centrale, autour les trois axes, et des flèches entre les découvertes.",
+      "Faire chercher les liens plutôt que les listes : « qu'est-ce que la mesure du temps a à voir avec l'espace-temps ? »",
+      "Repérer les idées du départ qui ont changé."
+    ],
+    eleve:[
+      "Construire le schéma de liens et le photographier.",
+      "Écrire une réponse provisoire à chacune de ses deux questions."
+    ],
+    app:["Phase « 🧩 Organiser » : photo du schéma et réponses provisoires."],
+    livrable:"Carnet d'étape « Chercher »." },
+
+  { n:7, periode:1, cycle:'organiser', duree:'45 min', titre:'Point d’étape et information des familles',
+    objectif:"Faire le bilan de la première période et donner une trace écrite à la famille.",
+    enseignant:[
+      "Relire le cahier avec l'élève, vérifier que chaque phase a un texte lisible.",
+      "Compléter la lettre aux parents dans l'onglet Livrables, puis l'imprimer.",
+      "Fixer avec l'élève l'objectif de la période suivante."
+    ],
+    eleve:["Relire et corriger ses textes.", "Dire ce dont il est le plus fier et ce qu'il veut encore chercher."],
+    app:["📦 Livrables → « Lettre aux parents », puis « Carnet d'étape » de l'étape Organiser."],
+    livrable:"Lettre aux parents + carnet d'étape." },
+
+  { n:8, periode:2, cycle:'approfondir', duree:'60 min', titre:'Fabriquer un instrument de mesure',
+    objectif:"Éprouver concrètement la mesure du temps en construisant une clepsydre ou un cadran solaire.",
+    enseignant:[
+      "Préparer le matériel : bouteille percée, gobelets, feutre, règle, chronomètre ; ou bâton et craie dans la cour.",
+      "Faire mesurer l'écart entre l'instrument fabriqué et le chronomètre.",
+      "Lier au concept clé Fonction : comment ça marche, et pourquoi ce n'est pas précis."
+    ],
+    eleve:["Fabriquer l'instrument, le graduer, mesurer trois durées.", "Expliquer par écrit pourquoi son instrument est imprécis."],
+    app:["Phase « 🔭 Approfondir » : photos de l'instrument et des mesures, texte d'explication."],
+    livrable:"Aucun." },
+
+  { n:9, periode:2, cycle:'approfondir', duree:'60 min', titre:'L’espace-temps expliqué avec une image',
+    objectif:"Construire une analogie utilisable pour expliquer l'espace-temps à des camarades, et en voir les limites.",
+    enseignant:[
+      "Proposer l'analogie du drap tendu avec une bille lourde qui le creuse : les objets massifs déforment l'espace-temps.",
+      "Faire manipuler si possible (tissu extensible et balle), sinon dessiner.",
+      "Faire dire ce que l'analogie n'explique pas : c'est un pas important vers l'esprit critique."
+    ],
+    eleve:["Dessiner l'analogie et l'expliquer par écrit.", "Écrire une limite de l'image choisie."],
+    app:["Phase « 🔭 Approfondir » : dessin photographié, explication et limite."],
+    livrable:"Carnet d'étape « Approfondir »." },
+
+  { n:10, periode:2, cycle:'conclure', duree:'60 min', titre:'Conclure et se relire',
+    objectif:"Répondre aux deux questions de départ et mesurer le chemin parcouru.",
+    enseignant:[
+      "Faire relire le bloc 1 écrit à la séance 1 : qu'est-ce qui a changé ?",
+      "Structurer la conclusion en trois temps : ce que je pensais, ce que je sais maintenant, ce qui reste un mystère.",
+      "Faire cocher les traits du profil de l'apprenant en demandant une preuve pour chacun."
+    ],
+    eleve:["Rédiger la conclusion en trois parties.", "Cocher les traits du profil de l'apprenant et justifier oralement."],
+    app:["Bloc 3 « Conclusion », puis « 🎓 Profil de l'apprenant » juste en dessous."],
+    livrable:"Carnet d'étape « Conclure »." },
+
+  { n:11, periode:2, cycle:'agir', duree:'60 min', titre:'Préparer la transmission',
+    objectif:"Transformer la recherche en une présentation compréhensible par des camarades de CM1/CM2.",
+    enseignant:[
+      "Fixer la contrainte : trois messages clés, pas plus, et une démonstration.",
+      "Faire traduire chaque mot savant en mots d'élève : l'élève n'a compris que ce qu'il sait redire simplement.",
+      "Faire répéter une fois devant vous, chronomètre en main."
+    ],
+    eleve:["Remplir la fiche de restitution.", "Choisir le matériel de démonstration.", "Répéter à voix haute."],
+    app:["📦 Livrables → « Fiche de restitution », remplir puis générer le PDF."],
+    livrable:"Fiche de restitution." },
+
+  { n:12, periode:2, cycle:'agir', duree:'45 min', titre:'Présenter à la classe',
+    objectif:"Présenter la recherche devant le groupe et répondre aux questions.",
+    enseignant:[
+      "Installer le cadre : 10 minutes de présentation, 5 minutes de questions.",
+      "Photographier ou filmer la présentation pour la trace écrite.",
+      "Recueillir deux retours positifs et une question restée sans réponse."
+    ],
+    eleve:["Présenter avec sa fiche en main.", "Noter la question à laquelle il n'a pas su répondre."],
+    app:["Bloc 4 « Action / Transmission » : photo de la présentation, compte rendu, case « restitution effectuée »."],
+    livrable:"Aucun." },
+
+  { n:13, periode:2, cycle:'agir', duree:'60 min', titre:'Devenir tuteur',
+    objectif:"Accompagner deux ou trois camarades dans leur propre mini-recherche sur le temps.",
+    enseignant:[
+      "Constituer un petit groupe et attribuer un sous-sujet simple : les calendriers, les durées d'une journée, les rythmes du corps.",
+      "Donner à l'élève tuteur une règle : il pose des questions, il ne donne pas les réponses.",
+      "Observer et noter comment il s'y prend : c'est l'évaluation de la partie Action."
+    ],
+    eleve:["Animer le petit groupe avec le cahier.", "Noter ce qui a été difficile à expliquer."],
+    app:["Compléter le bloc 4 : champ « atelier de tutorat » et compte rendu."],
+    livrable:"Aucun." },
+
+  { n:14, periode:2, cycle:'agir', duree:'45 min', titre:'Bilan et ouverture',
+    objectif:"Clore le projet avec un dossier complet et préparer l'extension à la classe.",
+    enseignant:[
+      "Rédiger le commentaire d'enseignant dans le bilan PYP.",
+      "Générer le dossier complet et la lettre aux parents de fin de projet.",
+      "Choisir avec l'élève le prochain sujet, ou la façon d'ouvrir la démarche à toute la classe."
+    ],
+    eleve:["Relire tout son cahier.", "Dire ce qu'il ferait autrement la prochaine fois."],
+    app:["📦 Livrables → « Bilan PYP », « Dossier complet », puis « Lettre aux parents »."],
+    livrable:"Bilan PYP + dossier complet + lettre aux parents." }
+];
+
+const GUIDE_INTRO = [
+  { h:"Le PYP en quelques lignes",
+    p:["Le PYP (Primary Years Programme) est le programme du Baccalauréat International pour l'école primaire. Il ne remplace pas les programmes français : c'est une façon d'organiser le travail autour d'une recherche menée par l'élève, où l'enseignant guide au lieu de transmettre.",
+       "Tout part d'une question de l'élève. Le rôle de l'adulte est de donner un cadre, des sources et des relances, puis de faire formuler. Une bonne séance PYP est une séance où l'élève parle et écrit plus que l'enseignant."] },
+  { h:"Les six pièces du cadre",
+    l:["<strong>Le thème transdisciplinaire</strong> : la grande famille de questions. Il y en a six ; pour le temps, c'est « Où nous nous situons dans l'espace et le temps ».",
+       "<strong>L'idée centrale</strong> : une phrase, pas une question, que toute la recherche cherche à éclairer.",
+       "<strong>Les axes de recherche</strong> : deux ou trois chemins pour explorer l'idée centrale. Ce sont eux qui structurent les séances.",
+       "<strong>Les concepts clés</strong> : huit questions-outils (Forme, Fonction, Causalité, Changement, Connexion, Perspective, Responsabilité, Réflexion). On en choisit trois ou quatre, pas huit.",
+       "<strong>Le profil de l'apprenant</strong> : dix qualités que l'élève apprend à reconnaître chez lui (chercheur, communicateur, réfléchi…). On les coche avec une preuve à l'appui.",
+       "<strong>L'action</strong> : la recherche ne s'arrête pas à la conclusion. L'élève fait quelque chose de ce qu'il a appris ; ici, il l'enseigne à d'autres."] },
+  { h:"Le cycle d'investigation, étape par étape",
+    l:["<strong>Se lancer</strong> : faire sortir ce que l'élève croit savoir, et ses questions.",
+       "<strong>Chercher</strong> : collecter l'information, une séance par axe.",
+       "<strong>Organiser</strong> : trier, relier, répondre provisoirement.",
+       "<strong>Approfondir</strong> : manipuler, expérimenter, aller plus loin que le programme si l'élève le peut.",
+       "<strong>Conclure</strong> : répondre aux questions de départ et nommer ce qui reste ouvert.",
+       "<strong>Agir</strong> : transmettre, ici présenter puis devenir tuteur."] },
+  { h:"Comment on évalue",
+    p:["Il n'y a pas de note. On évalue des traces : le cahier rempli séance après séance, la qualité des questions posées, la capacité à expliquer simplement, et la façon d'accompagner les autres pendant le tutorat.",
+       "Les livrables de cette application sont ces traces : carnets d'étape, fiche de restitution, bilan PYP, lettre aux parents et dossier complet."] },
+  { h:"Les trois erreurs les plus fréquentes",
+    l:["Donner la réponse quand l'élève bloque : préférez une relance (« qu'est-ce qui te ferait avancer ? », « où pourrais-tu vérifier ? »).",
+       "Multiplier les sources : trois bonnes sources valent mieux que dix.",
+       "Sauter l'étape Agir : c'est elle qui donne son sens au projet, et c'est là que l'élève consolide ce qu'il a compris."] }
+];
+
+const GUIDE_MEMO = [
+  { h:"Déroulé type d'une séance (45 à 60 min)",
+    l:["<strong>5 min — Relire.</strong> L'élève relit à voix haute ce qu'il a écrit la dernière fois et dit où il en est.",
+       "<strong>5 min — Annoncer.</strong> Vous nommez l'étape du cycle et l'objectif du jour.",
+       "<strong>30 à 40 min — Chercher ou produire.</strong> L'élève travaille ; vous relancez, vous ne dictez pas.",
+       "<strong>10 min — Écrire dans le cahier.</strong> Texte, photo, date : la trace se prend pendant la séance, jamais après.",
+       "<strong>5 min — Cocher.</strong> Vous cochez la séance dans le guide ; l'avancement se met à jour."] },
+  { h:"Relances utiles",
+    l:["« Qu'est-ce qui te fait dire ça ? »", "« Où as-tu trouvé cette information ? »", "« Comment l'expliquerais-tu à un élève de CE1 ? »", "« Qu'est-ce que tu ne comprends pas encore ? »", "« Qu'est-ce que ça change par rapport à ce que tu pensais au début ? »"] },
+  { h:"Si l'élève va plus vite que prévu",
+    p:["C'est fréquent avec un élève à haut potentiel. Plutôt que d'ajouter des séances, approfondissez : demandez une deuxième source contradictoire, une analogie de son invention, ou une version de son explication destinée à des CE1. Le tutorat est la meilleure extension : expliquer oblige à structurer."] },
+  { h:"Sauvegarde",
+    p:["Le cahier est enregistré dans le navigateur de l'ordinateur utilisé. Une fois par période, ouvrez ⚙️ Paramètres et cliquez sur « Enregistrer dans un fichier » : le fichier .json obtenu peut être rouvert sur un autre poste."] }
+];
+const AXE_PLACEHOLDERS = [
+  'Ex. : Comment mesure-t-on le temps ?',
+  'Ex. : Pourquoi le temps semble-t-il passer plus ou moins vite ?',
+  'Ex. : Qu’est-ce que l’espace-temps ?'
+];
+
+const getDefaultPYP = () => ({
+  theme: '', ideeCentrale: '', concepts: [], axes: [''], profil: [],
+  action: { text: '', image: null, datetime: '', restitutionFaite: false, atelier: '' }
+});
+
+const getDefaultState = () => ({
+  meta: { title: '', date: '', author: '', theme: '' },
+  initial: { text: '', image: null, datetime: '' },
+  phases: [],
+  conclusion: { text: '', image: null, datetime: '' },
+  triggersShown: true,
+  iaShown: false,
+  pypMode: false,
+  largeurConfort: false,
+  pyp: getDefaultPYP(),
+  guide: { done: [] },
+  docs: { ecole: '', classe: '', enseignant: '', bilanCommentaire: '', parentsMot: '', parentsAide: '' },
+  restitution: { question: '', m1: '', m2: '', m3: '', mots: '', materiel: '', questionsPublic: '' },
+  aiSettings: { model: 'none', apiKey: '' }
+});
+
+/* Migration silencieuse : complète toute donnée ancienne avec les champs par défaut */
+function migrateState(raw) {
+  const d = getDefaultState();
+  if(!raw || typeof raw !== 'object') return d;
+  const obj = (v) => (v && typeof v === 'object') ? v : {};
+  const arr = (v) => Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
+  const s = { ...d, ...raw };
+  s.meta = { ...d.meta, ...obj(raw.meta) };
+  s.initial = { ...d.initial, ...obj(raw.initial) };
+  s.conclusion = { ...d.conclusion, ...obj(raw.conclusion) };
+  s.phases = Array.isArray(raw.phases) ? raw.phases.map(p => ({ text: '', image: null, datetime: '', cycle: '', ...obj(p) })) : [];
+  s.aiSettings = { ...d.aiSettings, ...obj(raw.aiSettings) };
+  s.triggersShown = raw.triggersShown !== undefined ? !!raw.triggersShown : true;
+  s.iaShown = !!raw.iaShown;
+  s.pypMode = !!raw.pypMode;
+  s.largeurConfort = !!raw.largeurConfort;
+  s.guide = { done: (Array.isArray(obj(raw.guide).done) ? obj(raw.guide).done.filter(n => typeof n === 'number') : []) };
+  s.docs = { ...d.docs, ...obj(raw.docs) };
+  s.restitution = { ...d.restitution, ...obj(raw.restitution) };
+  const rp = obj(raw.pyp);
+  const axes = arr(rp.axes).slice(0, PYP_MAX_AXES);
+  s.pyp = {
+    ...d.pyp, ...rp,
+    theme: rp.theme || '',
+    ideeCentrale: rp.ideeCentrale || '',
+    concepts: arr(rp.concepts),
+    axes: axes.length ? axes : [''],
+    profil: arr(rp.profil),
+    action: { ...d.pyp.action, ...obj(rp.action) }
+  };
+  return s;
+}
+function loadState() {
+  let raw = null;
+  try {
+    raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(!raw) {
+      for(const k of LEGACY_STORAGE_KEYS) {
+        const v = localStorage.getItem(k);
+        if(v) { raw = JSON.parse(v); break; }
+      }
+    }
+  } catch(e) { raw = null; }
+  return migrateState(raw);
+}
+
+let state = loadState();
+let aiApiKey = state.aiSettings.apiKey;
+
+/* ------------------------------------------------------------
+   UI REFS (DOM)
+------------------------------------------------------------ */
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+
+/* ------------------------------------------------------------
+   RENDER HELPERS
+------------------------------------------------------------ */
+function renderMeta() {
+  $('#expTitle').value = state.meta.title;
+  $('#expDate').value = state.meta.date;
+  $('#expAuthor').value = state.meta.author;
+  $('#expTheme').value = state.meta.theme;
+  toggleTriggersVisibility();
+  applyModules();
+  renderPYP();
+}
+function renderBlock(blockEl, data, type) {
+  if(!blockEl) return;
+  blockEl.querySelector('[data-field="text"]').value = data.text || '';
+  blockEl.querySelector('[data-field="datetime"]').value = data.datetime || '';
+  updateCharCount(blockEl);
+  const imgZone = blockEl.querySelector('[data-field="image"]');
+  const existing = imgZone.querySelector('img');
+  if(existing) existing.remove();
+  if(data.image) {
+    const img = document.createElement('img'); img.src = data.image;
+    imgZone.classList.add('has-img'); imgZone.insertBefore(img, imgZone.querySelector('.placeholder'));
+    imgZone.querySelector('.placeholder').style.display = 'none';
+  } else {
+    imgZone.classList.remove('has-img');
+    imgZone.querySelector('.placeholder').style.display = 'flex';
+  }
+}
+function updateCharCount(block) {
+  const ta = block.querySelector('[data-field="text"]');
+  const cnt = block.querySelector('[data-count]');
+  if(ta && cnt) cnt.textContent = ta.value.length;
+}
+
+/* ---------- TRIGGERS ---------- */
+function renderTriggersUI() {
+  const grid = $('#triggersGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  TRIGGERS_DB.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'trigger-card';
+    card.innerHTML = `<div class="emoji">${t.emoji}</div><div class="title">${t.title}</div><div class="teaser">${t.teaser}</div>`;
+    card.onclick = () => fillTrigger(t);
+    grid.appendChild(card);
+  });
+}
+function toggleTriggersVisibility() {
+  const block = $('#blockTriggers');
+  if(block) {
+    block.style.display = state.triggersShown ? 'block' : 'none';
+  }
+}
+
+/* ---------- PHASES ---------- */
+function renderPhases() {
+  const container = $('#phases-container');
+  if(!container) return;
+  container.innerHTML = '';
+  $('#phaseCount').textContent = `(${state.phases.length} phase${state.phases.length>1?'s':''})`;
+  state.phases.forEach((p, i) => container.appendChild(createPhaseBlock(p, i)));
+  initSortable(container);
+  saveState();
+  renderProgress();
+}
+function getCycle(value) { return PYP_CYCLE.find(c => c.value === value) || null; }
+function phaseLabel(idx, cycleValue) {
+  const c = state.pypMode ? getCycle(cycleValue) : null;
+  return c ? `Phase ${idx+1} · ${c.icon} ${c.label}` : `Phase ${idx+1}`;
+}
+function applyPhaseCycle(block, cycleValue) {
+  if(!block) return;
+  const c = getCycle(cycleValue);
+  block.dataset.cycle = c ? c.value : '';
+  if(c) block.style.setProperty('--cycle-color', c.color); else block.style.removeProperty('--cycle-color');
+  const label = block.querySelector('.obs-type.phase');
+  if(label) label.textContent = phaseLabel(parseInt(block.dataset.index, 10), cycleValue);
+  const hint = block.querySelector('.pyp-cycle-hint');
+  if(hint) hint.textContent = c ? `💬 ${c.hint}` : 'Choisis l’étape du cycle d’investigation pour cette phase.';
+}
+function createPhaseBlock(data, idx) {
+  const w = document.createElement('div');
+  w.className = 'observation-block'; w.dataset.type = 'phase'; w.dataset.index = idx; w.draggable = true;
+  w.innerHTML = `
+    <div class="obs-header">
+      <span class="obs-type phase">Phase ${idx+1}</span>
+      <select class="pyp-cycle-select pyp-only-inline" data-field="cycle" title="Étape du cycle d’investigation PYP">
+        <option value="">— Étape du cycle PYP —</option>
+        ${PYP_CYCLE.map(c => `<option value="${c.value}">${c.icon} ${c.label}</option>`).join('')}
+      </select>
+      <input type="datetime-local" class="datetime-input" data-field="datetime">
+      <button class="btn-delete-obs" type="button" title="Supprimer">🗑️</button>
+    </div>
+    <div class="pyp-cycle-hint pyp-only"></div>
+    <div class="img-zone" data-field="image">
+      <div class="placeholder">📷 Photo de l'étape</div>
+      <input type="file" accept="image/*">
+      <div class="img-actions">
+        <button class="btn btn-small btn-secondary btn-cam" type="button">📸</button>
+        <button class="btn btn-small btn-danger" type="button" data-action="clear">❌</button>
+      </div>
+    </div>
+    <div class="text-zone">
+      <select class="scaffolding-select" data-target="textarea">
+        <option value="" disabled selected>📝 Début de phrase...</option>
+        <option value="J'observe que ">J'observe que…</option>
+        <option value="Je vois que ">Je vois que…</option>
+        <option value="Il se passe ">Il se passe…</option>
+        <option value="La température est de ">La température est de…</option>
+        <option value="Le volume a changé : ">Le volume a changé :…</option>
+        <option value="Ça sent ">Ça sent…</option>
+        <option value="C'est différent car ">C'est différent car…</option>
+        <option value="Je mesure ">Je mesure…</option>
+      </select>
+      <textarea data-field="text" placeholder="Décris ce qui se passe, notes tes mesures..."></textarea>
+      <div class="char-count"><span data-count="0">0</span> caractères</div>
+    </div>`;
+  renderBlock(w, data, 'phase');
+  const sel = w.querySelector('.pyp-cycle-select');
+  if(sel) sel.value = data.cycle || '';
+  applyPhaseCycle(w, data.cycle);
+  return w;
+}
+
+/* ---------- IA SETTINGS ---------- */
+function loadAISettings() {
+  const saved = JSON.parse(localStorage.getItem(AI_SETTINGS_KEY) || '{}');
+  state.aiSettings = { ...state.aiSettings, ...saved };
+  aiApiKey = state.aiSettings.apiKey;
+  $('#aiModelSelect').value = state.aiSettings.model;
+  $('#aiResponse').style.display = 'none';
+}
+function saveAISettings() {
+  const model = $('#aiModelSelect').value;
+  state.aiSettings.model = model;
+  // Clé API laissée à la discrétion de l'enseignant
+  if(state.aiSettings.apiKey) state.aiSettings.apiKey = state.aiSettings.apiKey.trim();
+  localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(state.aiSettings));
+  aiApiKey = state.aiSettings.apiKey;
+  showStatus('Paramètres IA sauvegardés.');
+  closeAllModals();
+}
+
+/* ---------- IA PROMPT ---------- */
+function askAI() {
+  const prompt = $('#aiPromptInput').value.trim();
+  if(!prompt) return alert('Entrez d’abord un prompt.');
+  if(state.aiSettings.model === 'none') return alert('Aucun modèle IA sélectionné.');
+  if(!aiApiKey) return alert('Clé API manquante. Utilisez les paramètres IA pour la définir.');
+
+  // Appel API réel (exemple avec fetch) – **ajustez l’endpoint et le modèle**
+  const endpoint = state.aiSettings.model === 'openai'
+    ? 'https://api.openai.com/v1/chat/completions'
+    : 'https://api.anthropic.com/v1/complete';
+
+  const body = state.aiSettings.model === 'openai'
+    ? JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7
+      })
+    : JSON.stringify({
+        model: 'claude-2',
+        prompt,
+        temperature: 0.7,
+        max_tokens: 300
+      });
+
+  $('#btnAskAI').disabled = true;
+  $('#btnAskAI').textContent = '⏳ En cours…';
+  showStatus('Appel IA en cours…');
+
+  fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(state.aiSettings.model === 'openai' ? { Authorization: `Bearer ${aiApiKey}` } : { 'X-API-Key': aiApiKey })
+    },
+    body: body
+  })
+    .then(res => {
+      if(!res.ok) throw new Error(res.statusText);
+      return res.json();
+    })
+    .then(data => {
+      let reply = '';
+      if(state.aiSettings.model === 'openai') {
+        reply = data.choices?.[0]?.message?.content || JSON.stringify(data);
+      } else {
+        reply = data.completion || JSON.stringify(data);
+      }
+      $('#aiResponse').innerHTML = `<strong>Problématique / Aide à la question IA :</strong><br>${reply}`;
+      $('#aiResponse').style.display = 'block';
+      showStatus('Réponse IA reçue.');
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Erreur lors de l’appel IA : ' + err.message);
+      showStatus('Erreur IA.');
+    })
+    .finally(() => {
+      $('#btnAskAI').disabled = false;
+      $('#btnAskAI').textContent = '🔎 Demander à l’IA';
+    });
+}
+
+/* ---------- UTILISER UN TRIGGER ---------- */
+function fillTrigger(t) {
+  // Mise à jour compacte des champs principaux
+  state.meta.title = t.title;
+  state.meta.date = new Date().toISOString().split('T')[0];
+  state.meta.theme = t.theme || '';
+
+  // Remplit le bloc initial avec une accroche
+  state.initial = {
+    text: `✨ ${t.teaser}\n\nJe pense que…`,
+    image: null,
+    datetime: ''
+  };
+
+  // Réinitialise les phases et la conclusion (vide)
+  state.phases = [];
+  state.conclusion = { text: '', image: null, datetime: '' };
+
+  // Sauvegarde + réaffichage de l’interface
+  saveState();
+  renderMeta();
+  renderBlock($('#blockInitial .observation-block'), state.initial, 'initial');
+  renderBlock($('#blockConclusion .observation-block'), state.conclusion, 'conclusion');
+  renderPhases();
+
+  showStatus(`Scénario « ${t.title} » chargé !`);
+  closeAllModals();
+}
+
+/* ---------- GESTIONNAIRE DES IMAGES ---------- */
+function handleImageUpload(input, block) {
+  const file = input.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')) return alert('Seules les images sont autorisées.');
+  if(file.size > 5*1024*1024) return alert('Image trop lourde (max 5Mo).');
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const imgZone = block.querySelector('[data-field="image"]');
+    const existing = imgZone.querySelector('img');
+    if(existing) existing.remove();
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    imgZone.classList.add('has-img');
+    imgZone.insertBefore(img, imgZone.querySelector('.placeholder'));
+    imgZone.querySelector('.placeholder').style.display = 'none';
+    saveBlockData(block);
+    debounceSave();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+/* ---------- ACTIONS ---------- */
+function saveBlockData(block) {
+  if(!block) return;
+  const type = block.dataset.type;
+  const ta = block.querySelector('[data-field="text"]');
+  const dt = block.querySelector('[data-field="datetime"]');
+  const img = block.querySelector('[data-field="image"] img');
+  const d = { text: ta ? ta.value : '', datetime: dt ? dt.value : '', image: img ? img.src : null };
+  if(type === 'initial') state.initial = d;
+  else if(type === 'conclusion') state.conclusion = d;
+  else if(type === 'action') state.pyp.action = { ...state.pyp.action, ...d };
+  else if(type === 'phase') {
+    const idx = parseInt(block.dataset.index, 10);
+    if(Array.isArray(state.phases) && state.phases[idx]) {
+      const sel = block.querySelector('[data-field="cycle"]');
+      state.phases[idx] = { ...state.phases[idx], ...d, cycle: sel ? sel.value : (state.phases[idx].cycle || '') };
+    }
+  }
+}
+function debounceSave() {
+  clearTimeout(window._saveT);
+  window._saveT = setTimeout(() => {
+    saveState();
+    showStatus(`Sauvegardé à ${new Date().toLocaleTimeString('fr-FR')}`);
+    const dot = $('#statusDot');
+    if(dot) { dot.style.background = '#fbc02d'; setTimeout(() => { dot.style.background = ''; }, 2000); }
+  }, 800);
+}
+
+/* ---------- UTILITAIRES ---------- */
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e) { showStatus('⚠️ Erreur stockage (images trop lourdes ?)'); }
+}
+function showStatus(msg) { const el = $('#statusText'); if(el) el.textContent = msg; }
+function closeAllModals() { $$('.modal-overlay').forEach(m => m.classList.remove('active')); }
+function openModal(id) { const m = $('#'+id); if(m) m.classList.add('active'); }
+function initSortable(container) {
+  if(!window.Sortable || !container) return;
+  if(container._sortable) container._sortable.destroy(); // évite d'empiler les instances
+  container._sortable = new Sortable(container, {
+    animation:150, handle:'.obs-header', ghostClass:'sortable-ghost', dragClass:'dragging',
+    filter:'select, input, button', preventOnFilter:false,
+    onEnd:(evt) => {
+      const old = evt.oldIndex, now = evt.newIndex;
+      if(old !== now) {
+        const moved = state.phases.splice(old,1)[0];
+        state.phases.splice(now,0,moved);
+        renderPhases();
+      }
+    }
+  });
+}
+
+/* ---------- PDF : conversion des champs en texte ---------- */
+function flattenFormForPDF(srcRoot, cloneRoot) {
+  const src = [...srcRoot.querySelectorAll('textarea, select, input')];
+  const dst = [...cloneRoot.querySelectorAll('textarea, select, input')];
+  dst.forEach((el, i) => {
+    const o = src[i];
+    if(!o || !cloneRoot.contains(el)) return; // élément déjà retiré (ex. case non cochée)
+    // listes d'aide et choix d'étape : l'étape figure déjà dans le libellé de la phase
+    if(el.matches('.scaffolding-select, .pyp-cycle-select, input[type="file"]')) { el.remove(); return; }
+    const optional = el.closest('[data-pdf-optional]');
+    if(el.tagName === 'TEXTAREA') {
+      const div = document.createElement('div');
+      div.style.whiteSpace = 'pre-wrap'; div.style.fontFamily = 'inherit'; div.style.lineHeight = '1.5';
+      div.textContent = o.value || '—';
+      el.replaceWith(div);
+    } else if(el.tagName === 'SELECT') {
+      const opt = o.options[o.selectedIndex];
+      if(!o.value || !opt) { el.remove(); return; }
+      const span = document.createElement('span');
+      span.className = (el.classList.contains('pyp-only-inline') ? 'pyp-only-inline ' : '') + 'pdf-value' + (el.matches('.pyp-cycle-select') ? ' pdf-chip' : '');
+      span.textContent = opt.textContent;
+      el.replaceWith(span);
+    } else if(el.type === 'checkbox') {
+      const label = el.closest('label');
+      if(!o.checked) { (label || el).remove(); return; }
+      if(label) label.classList.add('pdf-checked');
+      el.replaceWith(document.createTextNode('✔ '));
+    } else if(el.type === 'datetime-local') {
+      if(!o.value) { el.remove(); return; }
+      const span = document.createElement('span');
+      span.style.fontFamily = 'var(--font-mono)'; span.style.fontSize = '0.75rem'; span.style.color = '#777';
+      span.textContent = ' 🕒 ' + o.value;
+      el.replaceWith(span);
+    } else {
+      if(!o.value && optional) { optional.remove(); return; }
+      const span = document.createElement('span');
+      span.className = 'pdf-value';
+      span.textContent = o.value || '—';
+      el.replaceWith(span);
+    }
+  });
+}
+function preparePYPForPDF(clone) {
+  if(!state.pypMode) {
+    clone.querySelectorAll('.pyp-only, .pyp-only-inline').forEach(e => e.remove());
+    return;
+  }
+  const p = state.pyp;
+  const prune = (sel, empty) => { if(empty) clone.querySelectorAll(sel).forEach(e => e.remove()); };
+  prune('[data-pyp-row="theme"]', !p.theme);
+  prune('[data-pyp-row="idee"]', !(p.ideeCentrale || '').trim());
+  prune('[data-pyp-row="concepts"]', !p.concepts.length);
+  prune('[data-pyp-row="axes"]', !p.axes.some(a => (a || '').trim()));
+  const pypBlock = clone.querySelector('#blockPYP');
+  if(pypBlock && !pypBlock.querySelector('[data-pyp-row]')) pypBlock.remove();
+  prune('.pyp-profil', !p.profil.length);
+  const a = p.action;
+  const actionEmpty = !(a.text || '').trim() && !a.image && !(a.atelier || '').trim() && !a.restitutionFaite;
+  prune('#blockAction', actionEmpty);
+  const st = clone.querySelector('[data-pyp-row="restitution"]');
+  if(st) st.textContent = a.restitutionFaite ? '✅ Restitution à d’autres élèves effectuée' : '⏳ Restitution à d’autres élèves : à venir';
+}
+
+/* ------------------------------------------------------------
+   PDF EXPORT (Allégé & Optimal)
+------------------------------------------------------------ */
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function dateFr(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  if(isNaN(d)) return iso || '';
+  return d.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+}
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+}
+function fileName(base, qui, quand) {
+  return `${base}_${(qui || 'eleve')}_${quand || todayISO()}.pdf`.replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
+}
+function pdfLibsReady() {
+  if(window.html2canvas && window.jspdf) return true;
+  alert("Les outils PDF ne sont pas disponibles : cette page a besoin d'Internet au premier chargement.");
+  return false;
+}
+function renderElementToPDF(el, filename) {
+  return html2canvas(el, { scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false })
+    .then(canvas => {
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
+      const pw = pdf.internal.pageSize.getWidth();
+      const ph = pdf.internal.pageSize.getHeight();
+      const imgW = pw - 20;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      const pageH = ph - 20;
+      let pos = 0, left = imgH;
+      pdf.addImage(imgData, 'JPEG', 10, 10, imgW, imgH);
+      left -= pageH;
+      while(left > 0) {
+        pos -= pageH;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 10, 10 + pos, imgW, imgH);
+        left -= pageH;
+      }
+      return telechargerFichier(pdf.output('blob'), filename, 'application/pdf').then(ok => ok ? filename : null);
+    });
+}
+function exportDoc(html, baseName) {
+  if(!pdfLibsReady()) return;
+  const el = document.createElement('div');
+  el.className = 'doc-render';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  showStatus('Préparation du document…');
+  renderElementToPDF(el, fileName(baseName, state.meta.author || state.meta.title, state.meta.date))
+    .then(fn => { if(fn) showStatus(`Document généré : ${fn}`); })
+    .catch(err => { console.error(err); alert('Erreur lors de la génération du document.'); })
+    .finally(() => el.remove());
+}
+
+function generatePDF() {
+  if(!pdfLibsReady()) return;
+  const btn = $('#btnExportPDF');
+  btn.disabled = true; btn.innerHTML = '⏳ Génération…';
+  showStatus('Préparation du PDF…');
+
+  const source = $('#appContainer');
+  const clone = source.cloneNode(true);
+  clone.removeAttribute('id');
+  flattenFormForPDF(source, clone);
+  /* Nettoyage UI pour le PDF */
+  clone.querySelectorAll('.btn, .char-count, .img-actions, .btn-delete-obs, .add-phase-btn, .lab-footer, .compact-meta, .section-header h2 .badge, .pyp-cycle-hint, .progress-wrap, #blockTriggers, #blockIA').forEach(e=>e.remove());
+  clone.querySelectorAll('.img-zone:not(.has-img)').forEach(z=>z.style.display='none');
+  preparePYPForPDF(clone);
+  clone.style.maxWidth='800px'; clone.style.margin='0 auto';
+  clone.style.padding='20px'; clone.style.background='#fff';
+  document.body.appendChild(clone);
+
+  renderElementToPDF(clone, fileName('Labo', state.meta.title || state.meta.author, state.meta.date))
+    .then(fn => { if(fn) showStatus(`PDF exporté : ${fn}`); })
+    .catch(err => { console.error(err); alert('Erreur lors du PDF'); })
+    .finally(() => { clone.remove(); btn.disabled = false; btn.innerHTML = '📄 Exporter PDF'; });
+}
+
+/* ------------------------------------------------------------
+   MODULES (Scénarios, IA, PYP)
+------------------------------------------------------------ */
+function applyModules() {
+  document.body.classList.toggle('pyp-mode', !!state.pypMode);
+  document.body.classList.toggle('largeur-confort', !!state.largeurConfort);
+  const ia = $('#blockIA'); if(ia) ia.style.display = state.iaShown ? 'block' : 'none';
+  toggleTriggersVisibility();
+  renderProgress();
+}
+function syncSettingsModal() {
+  const set = (id, v) => { const el = $('#'+id); if(el) el.checked = !!v; };
+  set('chkTriggers', state.triggersShown);
+  set('chkIA', state.iaShown);
+  set('chkPYP', state.pypMode);
+  set('chkLargeur', state.largeurConfort);
+  const m = $('#aiModelSelect'); if(m) m.value = state.aiSettings.model || 'none';
+}
+function saveSettingsModal() {
+  const get = id => { const el = $('#'+id); return el ? el.checked : false; };
+  const wasPYP = state.pypMode;
+  state.triggersShown = get('chkTriggers');
+  state.iaShown = get('chkIA');
+  state.pypMode = get('chkPYP');
+  state.largeurConfort = get('chkLargeur');
+  applyModules();
+  if(wasPYP !== state.pypMode) renderPhases(); // met à jour les libellés des phases
+  saveState();
+  saveAISettings(); // ferme la modale
+  showStatus(state.pypMode ? '🌐 Mode PYP activé.' : 'Paramètres enregistrés.');
+}
+
+/* ---------- PYP : construction & rendu ---------- */
+function buildPYPControls() {
+  const theme = $('#pypTheme');
+  if(theme && theme.options.length <= 1) PYP_THEMES.forEach(t => theme.add(new Option(t.label, t.value)));
+  const conc = $('#pypConcepts');
+  if(conc && !conc.children.length) conc.innerHTML = PYP_CONCEPTS.map(c =>
+    `<label class="pyp-chip" title="${c.q}"><input type="checkbox" value="${c.value}"><span><strong>${c.label}</strong><small>${c.q}</small></span></label>`).join('');
+  const prof = $('#pypProfil');
+  if(prof && !prof.children.length) prof.innerHTML = PYP_PROFIL.map(t =>
+    `<label class="pyp-chip"><input type="checkbox" value="${t.value}"><span>${t.icon} ${t.label}</span></label>`).join('');
+}
+function renderAxes() {
+  const list = $('#pypAxesList'); if(!list) return;
+  if(!state.pyp.axes.length) state.pyp.axes = [''];
+  list.innerHTML = '';
+  state.pyp.axes.forEach((axe, i) => {
+    const row = document.createElement('div');
+    row.className = 'pyp-axe-row';
+    row.setAttribute('data-pdf-optional', '');
+    row.innerHTML = `<span class="pyp-axe-num">${i+1}</span>
+      <input type="text" class="pyp-input pyp-axe-input" data-axe-index="${i}" maxlength="160" placeholder="${AXE_PLACEHOLDERS[i] || 'Axe de recherche'}">
+      <button type="button" class="btn btn-icon btn-secondary pyp-axe-remove" data-axe-index="${i}" title="Supprimer cet axe" ${state.pyp.axes.length <= 1 ? 'disabled' : ''}>✕</button>`;
+    row.querySelector('input').value = axe;
+    list.appendChild(row);
+  });
+  const add = $('#btnAddAxe'); if(add) add.disabled = state.pyp.axes.length >= PYP_MAX_AXES;
+}
+function renderPYP() {
+  const p = state.pyp;
+  const theme = $('#pypTheme'); if(!theme) return;
+  theme.value = p.theme || '';
+  $('#pypIdeeCentrale').value = p.ideeCentrale || '';
+  $$('#pypConcepts input[type="checkbox"]').forEach(cb => { cb.checked = p.concepts.includes(cb.value); });
+  $$('#pypProfil input[type="checkbox"]').forEach(cb => { cb.checked = p.profil.includes(cb.value); });
+  renderAxes();
+  renderBlock($('#blockAction .observation-block'), p.action, 'action');
+  $('#pypRestitution').checked = !!p.action.restitutionFaite;
+  $('#pypAtelier').value = p.action.atelier || '';
+}
+function toggleInArray(arr, value, on) {
+  const i = arr.indexOf(value);
+  if(on && i < 0) arr.push(value);
+  if(!on && i >= 0) arr.splice(i, 1);
+}
+function createPYPCycle() {
+  const present = new Set(state.phases.map(p => p.cycle).filter(Boolean));
+  const missing = PYP_CYCLE.filter(c => !present.has(c.value));
+  if(!missing.length) { showStatus('Les 6 étapes du cycle sont déjà présentes.'); return; }
+  missing.forEach(c => state.phases.push({ text:'', image:null, datetime:'', cycle:c.value }));
+  renderPhases();
+  showStatus(`${missing.length} étape(s) du cycle PYP ajoutée(s).`);
+}
+
+function renderAll() {
+  buildPYPControls();
+  renderGuideStatic();
+  renderDocsForm();
+  renderMeta();
+  renderBlock($('#blockInitial .observation-block'), state.initial, 'initial');
+  renderBlock($('#blockConclusion .observation-block'), state.conclusion, 'conclusion');
+  renderTriggersUI();
+  renderPhases();
+  renderProgress();
+}
+
+/* ------------------------------------------------------------
+   AVANCEMENT & GUIDE ENSEIGNANT
+------------------------------------------------------------ */
+function projectProgress() {
+  const total = PROGRAMMATION.length;
+  const done = state.guide.done.length;
+  const etapes = new Set(state.phases.filter(p => p.cycle && (p.text || '').trim()).map(p => p.cycle)).size;
+  return { done, total, etapes, pct: Math.round((done / total) * 100) };
+}
+function renderProgress() {
+  const fill = $('#progressFill'); if(!fill) return;
+  const pr = projectProgress();
+  fill.style.width = pr.pct + '%';
+  const detail = $('#progressDetail');
+  if(detail) detail.textContent = `${pr.done}/${pr.total} séances · ${pr.etapes}/6 étapes du cycle`;
+}
+function seanceFaite(n) { return state.guide.done.indexOf(n) >= 0; }
+function setSeanceFaite(n, on) {
+  const i = state.guide.done.indexOf(n);
+  if(on && i < 0) state.guide.done.push(n);
+  if(!on && i >= 0) state.guide.done.splice(i, 1);
+  state.guide.done.sort((a, b) => a - b);
+  saveState(); renderProgress();
+}
+function listeHTML(arr) { return '<ul>' + arr.map(x => `<li>${x}</li>`).join('') + '</ul>'; }
+function guideSectionsHTML(sections) {
+  return sections.map(sec => `<h4>${esc(sec.h)}</h4>` +
+    (sec.p ? sec.p.map(t => `<p>${esc(t)}</p>`).join('') : '') +
+    (sec.l ? listeHTML(sec.l) : '')).join('');
+}
+function renderGuideStatic() {
+  const intro = $('#guideIntroContent');
+  if(intro && !intro.innerHTML) intro.innerHTML = guideSectionsHTML(GUIDE_INTRO);
+  const memo = $('#guideMemoContent');
+  if(memo && !memo.innerHTML) memo.innerHTML = guideSectionsHTML(GUIDE_MEMO);
+}
+function renderGuideProg() {
+  const box = $('#guideProgList'); if(!box) return;
+  box.innerHTML = '';
+  [1, 2].forEach(per => {
+    const t = document.createElement('div');
+    t.className = 'periode-title';
+    t.textContent = per === 1 ? 'Période 1 — séances 1 à 7 : questionner, chercher, organiser'
+                              : 'Période 2 — séances 8 à 14 : approfondir, conclure, transmettre';
+    box.appendChild(t);
+    PROGRAMMATION.filter(sc => sc.periode === per).forEach(sc => {
+      const c = getCycle(sc.cycle);
+      const card = document.createElement('div');
+      card.className = 'seance-card' + (seanceFaite(sc.n) ? ' done' : '');
+      card.style.setProperty('--cycle-color', c ? c.color : 'var(--accent)');
+      card.innerHTML = `
+        <div class="seance-head">
+          <span class="seance-num">Séance ${sc.n}</span>
+          <span class="seance-title">${esc(sc.titre)}</span>
+          <span class="seance-etape">${c ? c.icon + ' ' + c.label : ''}</span>
+          <span class="seance-actions">
+            <span class="progress-label">${esc(sc.duree)}</span>
+            <button type="button" class="btn btn-small btn-secondary btn-ouvrir-etape" data-cycle="${sc.cycle}">Ouvrir l'étape</button>
+            <label class="seance-check"><input type="checkbox" class="chk-seance" data-seance="${sc.n}" ${seanceFaite(sc.n) ? 'checked' : ''}> faite</label>
+          </span>
+        </div>
+        <div class="seance-body">
+          <p><em>${esc(sc.objectif)}</em></p>
+          <h5>Ce que fait l'enseignant</h5>${listeHTML(sc.enseignant.map(esc))}
+          <h5>Ce que fait l'élève</h5>${listeHTML(sc.eleve.map(esc))}
+          <h5>Dans l'application</h5>${listeHTML(sc.app.map(esc))}
+          <div class="seance-livrable">📦 Livrable : ${esc(sc.livrable)}</div>
+        </div>`;
+      box.appendChild(card);
+    });
+  });
+}
+function ouvrirEtape(cycleValue) {
+  if(!state.pypMode) { alert('Activez le mode PYP dans ⚙️ Paramètres.'); return; }
+  let existe = state.phases.some(p => p.cycle === cycleValue);
+  if(!existe) {
+    state.phases.push({ text:'', image:null, datetime:'', cycle:cycleValue });
+    renderPhases();
+  }
+  closeAllModals();
+  const idx = state.phases.findIndex(p => p.cycle === cycleValue);
+  const block = $$('#phases-container .observation-block')[idx];
+  if(block) {
+    block.scrollIntoView({ behavior:'smooth', block:'center' });
+    const ta = block.querySelector('textarea'); if(ta) setTimeout(() => ta.focus(), 400);
+  }
+  const c = getCycle(cycleValue);
+  showStatus(c ? `Étape ${c.label} ouverte.` : 'Étape ouverte.');
+}
+
+/* ------------------------------------------------------------
+   SAUVEGARDE FICHIER (.json)
+------------------------------------------------------------ */
+function exportJSON() {
+  const nom = `cahier_${(state.meta.author || state.meta.title || 'eleve')}_${state.meta.date || todayISO()}.json`
+    .replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
+  telechargerFichier(JSON.stringify(state, null, 2), nom, 'application/json')
+    .then(ok => { if(ok) showStatus('Cahier enregistré dans un fichier.'); });
+}
+function importJSONFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const raw = JSON.parse(ev.target.result);
+      if(!confirm('Remplacer le cahier actuel par le contenu du fichier ? Le cahier affiché sera perdu.')) return;
+      state = migrateState(raw);
+      saveState();
+      renderAll();
+      closeAllModals();
+      showStatus('Cahier chargé depuis le fichier.');
+    } catch(e) { console.error(e); alert("Ce fichier n'est pas un cahier valide."); }
+  };
+  reader.readAsText(file);
+}
+
+/* ------------------------------------------------------------
+   LIVRABLES (documents PDF)
+------------------------------------------------------------ */
+function docHeader(titre, sousTitre) {
+  const d = state.docs;
+  const ligne = [d.ecole, d.classe, d.enseignant].filter(x => (x || '').trim()).join(' · ');
+  return `<div class="doc-sub">${esc(ligne || 'Projet PYP — cahier de laboratoire')}</div>
+    <h1>${esc(titre)}</h1>
+    <div class="doc-sub">${esc(sousTitre)}</div>`;
+}
+function docFoot() {
+  return `<div class="doc-foot">Document produit le ${esc(dateFr())} avec le Cahier de Laboratoire (mode PYP) — projet « ${esc(state.meta.title || 'Sans titre')} ».</div>`;
+}
+function eleveNom() { return state.meta.author || "l'élève"; }
+function phasesOf(cycleValue) { return state.phases.filter(p => p.cycle === cycleValue); }
+function phaseHTML(p, i) {
+  const quand = p.datetime ? `<div class="doc-sub">🕒 ${esc(p.datetime.replace('T', ' à '))}</div>` : '';
+  const img = p.image ? `<img src="${p.image}" alt="">` : '';
+  const txt = (p.text || '').trim();
+  if(!txt && !p.image) return '';
+  return `<div class="doc-box">${quand}${img}<p>${esc(txt || '—')}</p></div>`;
+}
+function conceptsHTML() {
+  if(!state.pyp.concepts.length) return '<p>—</p>';
+  return state.pyp.concepts.map(v => {
+    const c = PYP_CONCEPTS.find(x => x.value === v);
+    return c ? `<span class="doc-chip">${esc(c.label)} — ${esc(c.q)}</span>` : '';
+  }).join('');
+}
+function profilHTML() {
+  if(!state.pyp.profil.length) return '<p>—</p>';
+  return state.pyp.profil.map(v => {
+    const t = PYP_PROFIL.find(x => x.value === v);
+    return t ? `<span class="doc-chip">${esc(t.icon + ' ' + t.label)}</span>` : '';
+  }).join('');
+}
+function axesHTML() {
+  const axes = state.pyp.axes.filter(a => (a || '').trim());
+  if(!axes.length) return '<p>—</p>';
+  return '<ul>' + axes.map(a => `<li>${esc(a)}</li>`).join('') + '</ul>';
+}
+function cadreHTML() {
+  const th = PYP_THEMES.find(t => t.value === state.pyp.theme);
+  return `<h2>Le cadre de la recherche</h2>
+    <div class="doc-box">
+      <p><strong>Thème transdisciplinaire :</strong> ${esc(th ? th.label : '—')}</p>
+      <p><strong>Idée centrale :</strong> ${esc(state.pyp.ideeCentrale || '—')}</p>
+    </div>
+    <p><strong>Axes de recherche :</strong></p>${axesHTML()}
+    <p><strong>Concepts clés :</strong></p><div>${conceptsHTML()}</div>`;
+}
+function prochaineSeance() {
+  return PROGRAMMATION.find(sc => !seanceFaite(sc.n)) || null;
+}
+function derniereSeance() {
+  const done = state.guide.done;
+  if(!done.length) return null;
+  return PROGRAMMATION.find(sc => sc.n === done[done.length - 1]) || null;
+}
+
+function docCarnetHTML(cycleValue) {
+  const c = getCycle(cycleValue);
+  const phases = phasesOf(cycleValue);
+  const corps = phases.map(phaseHTML).join('') || '<p>Cette étape n’a pas encore de trace écrite.</p>';
+  const idx = PYP_CYCLE.findIndex(x => x.value === cycleValue);
+  const suite = PYP_CYCLE[idx + 1];
+  const seances = PROGRAMMATION.filter(sc => sc.cycle === cycleValue);
+  return docHeader(`Carnet d'étape — ${c.icon} ${c.label}`, `${eleveNom()} · ${dateFr(state.meta.date)}`)
+    + cadreHTML()
+    + `<h2>Ce que j'ai fait à cette étape</h2>${corps}`
+    + `<h2>Séances concernées</h2>` + '<ul>' + seances.map(sc => `<li>Séance ${sc.n} — ${esc(sc.titre)}${seanceFaite(sc.n) ? ' ✔' : ''}</li>`).join('') + '</ul>'
+    + (suite ? `<h2>Prochaine étape</h2><div class="doc-box"><p><strong>${esc(suite.icon + ' ' + suite.label)}</strong></p><p>${esc(suite.hint)}</p></div>` : '')
+    + docFoot();
+}
+
+function docRestitutionHTML() {
+  const r = state.restitution;
+  const ligne = t => `<p><strong>${esc(t)}</strong></p><div class="doc-line"></div>`;
+  return docHeader('Fiche de restitution — je présente ma recherche', `${eleveNom()} · ${dateFr(state.meta.date)}`)
+    + `<h2>Ma question de départ</h2><div class="doc-box"><p>${esc(r.question || state.pyp.axes[0] || '—')}</p></div>`
+    + `<h2>Mes trois messages clés</h2>
+       <div class="doc-box"><p><strong>1.</strong> ${esc(r.m1 || '—')}</p><p><strong>2.</strong> ${esc(r.m2 || '—')}</p><p><strong>3.</strong> ${esc(r.m3 || '—')}</p></div>`
+    + `<h2>Les mots difficiles, dits simplement</h2><div class="doc-box"><p>${esc(r.mots || '—')}</p></div>`
+    + `<h2>Ce que je montre</h2><div class="doc-box"><p>${esc(r.materiel || '—')}</p></div>`
+    + `<h2>Les questions que je pose au public</h2><div class="doc-box"><p>${esc(r.questionsPublic || '—')}</p></div>`
+    + `<h2>Mon déroulé</h2>
+       <div class="doc-box">
+         <p><strong>1 min — J'accroche :</strong> je pose ma question au public.</p>
+         <p><strong>4 min — J'explique :</strong> mes trois messages, un par un.</p>
+         <p><strong>3 min — Je montre :</strong> ma démonstration ou mon schéma.</p>
+         <p><strong>2 min — Je fais parler :</strong> mes questions au public.</p>
+         <p><strong>5 min — Je réponds</strong> aux questions. Si je ne sais pas, je le dis et je note la question.</p>
+       </div>`
+    + `<h2>Après la présentation</h2>${ligne('Une question à laquelle je n’ai pas su répondre :')}${ligne('Ce que je changerais la prochaine fois :')}`
+    + docFoot();
+}
+
+function docBilanHTML() {
+  const pr = projectProgress();
+  const a = state.pyp.action;
+  const etapesHTML = PYP_CYCLE.map(c => {
+    const ph = phasesOf(c.value).filter(p => (p.text || '').trim());
+    return `<li>${esc(c.icon + ' ' + c.label)} : ${ph.length ? ph.length + ' trace(s) écrite(s)' : 'non travaillée'}</li>`;
+  }).join('');
+  return docHeader('Bilan du projet PYP', `${eleveNom()} · ${dateFr()}`)
+    + cadreHTML()
+    + `<h2>Parcours de l'élève</h2>
+       <div class="doc-box">
+         <p><strong>Séances réalisées :</strong> ${pr.done} sur ${pr.total}</p>
+         <p><strong>Étapes du cycle d'investigation :</strong> ${pr.etapes} sur 6</p>
+       </div>
+       <ul>${etapesHTML}</ul>`
+    + `<h2>Profil de l'apprenant — traits mobilisés</h2><div>${profilHTML()}</div>`
+    + `<h2>Action et transmission</h2>
+       <div class="doc-box">
+         <p>${esc((a.text || '').trim() || 'Pas encore renseigné.')}</p>
+         <p><strong>Atelier de tutorat :</strong> ${esc(a.atelier || '—')}</p>
+         <p><strong>Restitution à d'autres élèves :</strong> ${a.restitutionFaite ? 'effectuée' : 'à venir'}</p>
+       </div>`
+    + `<h2>Commentaire de l'enseignant</h2><div class="doc-box"><p>${esc(state.docs.bilanCommentaire || '—')}</p></div>`
+    + `<p style="margin-top:24px">Date et signature : ${esc(state.docs.enseignant || '')}</p><div class="doc-line"></div>`
+    + docFoot();
+}
+
+function docParentsHTML() {
+  const pr = projectProgress();
+  const derniere = derniereSeance();
+  const suite = prochaineSeance();
+  const concl = (state.conclusion.text || '').trim();
+  const dernierTexte = [...state.phases].reverse().find(p => (p.text || '').trim());
+  const extrait = concl || (dernierTexte ? dernierTexte.text.trim() : '');
+  return docHeader('Où en est le projet de votre enfant ?', `${eleveNom()} · ${dateFr()}`)
+    + `<p>Madame, Monsieur,</p>
+       <p>Votre enfant mène cette année une recherche personnelle sur le thème du temps, dans l'esprit du programme primaire du Baccalauréat International (PYP). Il part de ses propres questions, cherche, organise ses découvertes, puis apprend à les expliquer à ses camarades.</p>`
+    + `<h2>Où en est le projet</h2>
+       <div class="doc-box">
+         <p><strong>Avancement :</strong> ${pr.done} séance(s) sur ${pr.total}, ${pr.etapes} étape(s) du cycle de recherche sur 6.</p>
+         <p><strong>Dernière séance réalisée :</strong> ${derniere ? esc('n° ' + derniere.n + ' — ' + derniere.titre) : 'le projet démarre'}</p>
+         <p><strong>Prochaine étape :</strong> ${suite ? esc(suite.titre + ' — ' + suite.objectif) : 'projet terminé'}</p>
+       </div>`
+    + (extrait ? `<h2>Dans ses mots</h2><div class="doc-box"><p>${esc(extrait.slice(0, 700))}${extrait.length > 700 ? '…' : ''}</p></div>` : '')
+    + (state.pyp.ideeCentrale ? `<h2>Ce que la recherche cherche à comprendre</h2><p>${esc(state.pyp.ideeCentrale)}</p>` : '')
+    + (state.docs.parentsAide ? `<h2>Comment l'aider à la maison</h2><p>${esc(state.docs.parentsAide)}</p>` : '')
+    + (state.docs.parentsMot ? `<h2>Mot de l'enseignant</h2><p>${esc(state.docs.parentsMot)}</p>` : '')
+    + `<p style="margin-top:20px">Bien cordialement,</p><p>${esc(state.docs.enseignant || '')}</p>`
+    + docFoot();
+}
+
+function docDossierHTML() {
+  const init = (state.initial.text || '').trim();
+  const etapes = PYP_CYCLE.map(c => {
+    const ph = phasesOf(c.value).map(phaseHTML).join('');
+    if(!ph) return '';
+    return `<h2>${esc(c.icon + ' ' + c.label)}</h2>${ph}`;
+  }).join('');
+  const a = state.pyp.action;
+  return docHeader('Dossier de recherche', `${eleveNom()} · ${esc(state.meta.title || '')} · ${dateFr()}`)
+    + cadreHTML()
+    + (init ? `<h2>Ce que je pensais au départ</h2><div class="doc-box">${state.initial.image ? `<img src="${state.initial.image}" alt="">` : ''}<p>${esc(init)}</p></div>` : '')
+    + etapes
+    + ((state.conclusion.text || '').trim() ? `<h2>Ma conclusion</h2><div class="doc-box">${state.conclusion.image ? `<img src="${state.conclusion.image}" alt="">` : ''}<p>${esc(state.conclusion.text)}</p></div>` : '')
+    + `<h2>Profil de l'apprenant</h2><div>${profilHTML()}</div>`
+    + (((a.text || '').trim() || a.atelier) ? `<h2>Ce que j'en ai fait (action)</h2><div class="doc-box">${a.image ? `<img src="${a.image}" alt="">` : ''}<p>${esc(a.text || '')}</p><p><strong>Tutorat :</strong> ${esc(a.atelier || '—')}</p></div>` : '')
+    + docFoot();
+}
+
+function docGuideHTML() {
+  const seances = PROGRAMMATION.map(sc => {
+    const c = getCycle(sc.cycle);
+    return `<div class="doc-box">
+      <p><strong>Séance ${sc.n} — ${esc(sc.titre)}</strong> (${esc(sc.duree)}, étape ${esc(c ? c.label : '')})</p>
+      <p><em>${esc(sc.objectif)}</em></p>
+      <p><strong>Enseignant :</strong></p><ul>${sc.enseignant.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <p><strong>Élève :</strong></p><ul>${sc.eleve.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <p><strong>Dans l'application :</strong></p><ul>${sc.app.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <p><strong>Livrable :</strong> ${esc(sc.livrable)}</p>
+    </div>`;
+  }).join('');
+  const sections = GUIDE_INTRO.concat(GUIDE_MEMO).map(sec =>
+    `<h2>${esc(sec.h)}</h2>` +
+    (sec.p ? sec.p.map(t => `<p>${esc(t)}</p>`).join('') : '') +
+    (sec.l ? '<ul>' + sec.l.map(x => `<li>${x}</li>`).join('') + '</ul>' : '')).join('');
+  return docHeader('Guide enseignant — projet PYP « Le Temps »', `Programmation en 14 séances · ${dateFr()}`)
+    + sections
+    + `<h2>Programmation détaillée</h2>` + seances
+    + docFoot();
+}
+
+/* ---------- Documents au format HTML (consultables, imprimables, sans Internet) ---------- */
+const DOC_CSS = `
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px 16px; background:#e8e4d9; font-family:'Segoe UI', system-ui, -apple-system, sans-serif; color:#1a1a1a; }
+  .doc-render { width:100%; max-width:820px; margin:0 auto; background:#fff; padding:40px 44px; border-radius:8px; box-shadow:0 4px 14px rgba(0,0,0,.08); font-size:15px; line-height:1.6; }
+  .doc-render h1 { font-size:24px; color:#2e7d32; margin:0 0 4px; }
+  .doc-render h2 { font-size:17px; color:#2e7d32; margin:26px 0 10px; border-bottom:1px solid #d9d0b8; padding-bottom:5px; }
+  .doc-render .doc-sub { font-size:13px; color:#666; margin-bottom:16px; }
+  .doc-render p { margin:0 0 10px; white-space:pre-wrap; }
+  .doc-render ul { margin:0 0 12px 22px; }
+  .doc-render li { margin-bottom:4px; }
+  .doc-render .doc-box { border:1px solid #d9d0b8; border-radius:6px; padding:14px 16px; margin-bottom:12px; background:#fdfcf5; }
+  .doc-render .doc-line { border-bottom:1px dotted #999; height:26px; margin-bottom:8px; }
+  .doc-render .doc-chip { display:inline-block; border:1px solid #1565c0; color:#1565c0; border-radius:12px; padding:2px 10px; font-size:13px; margin:0 6px 6px 0; }
+  .doc-render img { max-width:100%; border:1px solid #ddd; border-radius:4px; margin-bottom:10px; }
+  .doc-render .doc-foot { margin-top:28px; font-size:12px; color:#888; border-top:1px solid #eee; padding-top:10px; }
+  .doc-tools { max-width:820px; margin:0 auto 14px; display:flex; gap:10px; justify-content:flex-end; }
+  .doc-tools button { padding:8px 14px; border:none; border-radius:6px; background:#2e7d32; color:#fff; font:inherit; font-size:14px; cursor:pointer; }
+  .doc-tools button:hover { background:#1b5e20; }
+  @media print {
+    body { background:#fff; padding:0; }
+    .doc-tools { display:none; }
+    .doc-render { box-shadow:none; max-width:100%; padding:0; border-radius:0; }
+    .doc-render h2 { break-after:avoid; page-break-after:avoid; }
+    .doc-render .doc-box { break-inside:avoid; page-break-inside:avoid; }
+  }
+`;
+function docStandaloneHTML(titre, corps) {
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(titre)}</title>
+<style>${DOC_CSS}</style>
+</head>
+<body>
+<div class="doc-tools"><button type="button" onclick="window.print()">🖨️ Imprimer / enregistrer en PDF</button></div>
+<div class="doc-render">${corps}</div>
+</body>
+</html>`;
+}
+let _downloadsCap;
+function getDownloadsCap() {
+  if(_downloadsCap === undefined) {
+    _downloadsCap = (window.claude && typeof window.claude.use === 'function')
+      ? window.claude.use('downloads').catch(() => null)
+      : Promise.resolve(null);
+  }
+  return _downloadsCap;
+}
+/* Enregistre un fichier : via la passerelle de la version en ligne si elle existe,
+   sinon par un lien de téléchargement classique (fichier ouvert depuis l'ordinateur). */
+function telechargerFichier(contenu, nom, type) {
+  let blob;
+  try { blob = (contenu instanceof Blob) ? contenu : new Blob([contenu], { type }); }
+  catch(e) { console.error(e); alert("Impossible de préparer le fichier."); return Promise.resolve(false); }
+  return getDownloadsCap().then(dl => {
+    if(!dl) return lienTelechargement(blob, nom);
+    return dl.save({ filename: nom, data: blob }).then(() => true).catch(err => {
+      if(err && err.code === 'declined') { showStatus('Enregistrement annulé.'); return false; }
+      console.error(err);
+      return lienTelechargement(blob, nom);
+    });
+  });
+}
+function lienTelechargement(blob, nom) {
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nom;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    return true;
+  } catch(e) { console.error(e); alert("Impossible d'enregistrer le fichier."); return false; }
+}
+function nomFichier(base, ext) {
+  const qui = state.meta.author || state.meta.title || 'eleve';
+  const quand = state.meta.date || todayISO();
+  return `${base}_${qui}_${quand}.${ext}`.replace(/[^a-z0-9_.\-]/gi, '_').toLowerCase();
+}
+function exportDocHTML(corps, base, titre) {
+  showStatus('Préparation du document HTML…');
+  telechargerFichier(docStandaloneHTML(titre, corps), nomFichier(base, 'html'), 'text/html;charset=utf-8')
+    .then(ok => { if(ok) showStatus('Document HTML enregistré : ouvrez-le dans un navigateur.'); });
+}
+function docContent(kind) {
+  switch(kind) {
+    case 'guide':
+      return { html: docGuideHTML(), base:'Guide_enseignant_PYP', titre:'Guide enseignant — projet PYP « Le Temps »' };
+    case 'carnet': {
+      const sel = $('#carnetEtape');
+      const c = getCycle(sel ? sel.value : '') || PYP_CYCLE[0];
+      return { html: docCarnetHTML(c.value), base:'Carnet_etape_' + c.value, titre:"Carnet d'étape — " + c.label };
+    }
+    case 'resti':   return { html: docRestitutionHTML(), base:'Fiche_restitution', titre:'Fiche de restitution' };
+    case 'bilan':   return { html: docBilanHTML(), base:'Bilan_PYP', titre:'Bilan du projet PYP' };
+    case 'parents': return { html: docParentsHTML(), base:'Lettre_parents', titre:'Où en est le projet de votre enfant ?' };
+    case 'dossier': return { html: docDossierHTML(), base:'Dossier_recherche', titre:'Dossier de recherche' };
+    default: return null;
+  }
+}
+function produireDocument(kind, format) {
+  const d = docContent(kind);
+  if(!d) return;
+  if(format === 'html') exportDocHTML(d.html, d.base, d.titre);
+  else exportDoc(d.html, d.base);
+}
+
+function renderDocsForm() {
+  const set = (id, v) => { const el = $('#' + id); if(el) el.value = v || ''; };
+  set('docEcole', state.docs.ecole); set('docClasse', state.docs.classe); set('docEnseignant', state.docs.enseignant);
+  set('bilanCommentaire', state.docs.bilanCommentaire); set('parentsMot', state.docs.parentsMot); set('parentsAide', state.docs.parentsAide);
+  const r = state.restitution;
+  set('restiQuestion', r.question || state.pyp.axes[0] || ''); set('restiMsg1', r.m1); set('restiMsg2', r.m2); set('restiMsg3', r.m3);
+  set('restiMots', r.mots); set('restiMateriel', r.materiel); set('restiQuestionsPublic', r.questionsPublic);
+  const sel = $('#carnetEtape');
+  if(sel && !sel.options.length) PYP_CYCLE.forEach(c => sel.add(new Option(`${c.icon} ${c.label}`, c.value)));
+}
+const DOC_FIELDS = {
+  docEcole:['docs','ecole'], docClasse:['docs','classe'], docEnseignant:['docs','enseignant'],
+  bilanCommentaire:['docs','bilanCommentaire'], parentsMot:['docs','parentsMot'], parentsAide:['docs','parentsAide'],
+  restiQuestion:['restitution','question'], restiMsg1:['restitution','m1'], restiMsg2:['restitution','m2'],
+  restiMsg3:['restitution','m3'], restiMots:['restitution','mots'], restiMateriel:['restitution','materiel'],
+  restiQuestionsPublic:['restitution','questionsPublic']
+};
+
+/* ---------- EVENT LISTENERS ---------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  renderAll();
+  loadAISettings();
+  saveState(); // migration silencieuse vers la v2.4
+  showStatus(state.pypMode ? 'Application prête — mode PYP actif.' : 'Application prête.');
+});
+
+/* Saisie : enregistrement automatique */
+document.addEventListener('input', e => {
+  const t = e.target;
+  const metaMap = { expTitle:'title', expDate:'date', expAuthor:'author', expTheme:'theme' };
+  if(metaMap[t.id]) { state.meta[metaMap[t.id]] = t.value; debounceSave(); return; }
+  if(t.id === 'pypIdeeCentrale') { state.pyp.ideeCentrale = t.value; debounceSave(); return; }
+  if(t.id === 'pypAtelier') { state.pyp.action.atelier = t.value; debounceSave(); return; }
+  if(DOC_FIELDS[t.id]) { const [grp, key] = DOC_FIELDS[t.id]; state[grp][key] = t.value; debounceSave(); return; }
+  if(t.matches('.pyp-axe-input')) { state.pyp.axes[parseInt(t.dataset.axeIndex, 10)] = t.value; debounceSave(); return; }
+  const block = t.closest('.observation-block');
+  if(block && t.matches('[data-field="text"], [data-field="datetime"]')) {
+    if(t.tagName === 'TEXTAREA') updateCharCount(block);
+    saveBlockData(block); debounceSave();
+  }
+});
+
+/* Listes, cases à cocher, images */
+document.addEventListener('change', e => {
+  const t = e.target;
+  if(t.id === 'fileImportJSON') { if(t.files && t.files[0]) importJSONFile(t.files[0]); t.value = ''; return; }
+  if(t.matches('.chk-seance')) {
+    setSeanceFaite(parseInt(t.dataset.seance, 10), t.checked);
+    const card = t.closest('.seance-card'); if(card) card.classList.toggle('done', t.checked);
+    return;
+  }
+  if(t.matches('.img-zone input[type="file"]')) {
+    const block = t.closest('.observation-block');
+    if(block && t.files && t.files[0]) handleImageUpload(t, block);
+    return;
+  }
+  if(t.matches('.scaffolding-select')) {
+    const ta = t.closest('.text-zone')?.querySelector('textarea');
+    if(t.value && ta) { ta.value += t.value; ta.dispatchEvent(new Event('input', { bubbles:true })); ta.focus(); }
+    t.selectedIndex = 0;
+    return;
+  }
+  if(t.matches('.pyp-cycle-select')) {
+    const block = t.closest('.observation-block');
+    applyPhaseCycle(block, t.value); saveBlockData(block); debounceSave();
+    return;
+  }
+  if(t.id === 'expTheme') { state.meta.theme = t.value; debounceSave(); return; }
+  if(t.id === 'pypTheme') { state.pyp.theme = t.value; debounceSave(); return; }
+  if(t.closest('#pypConcepts')) { toggleInArray(state.pyp.concepts, t.value, t.checked); debounceSave(); return; }
+  if(t.closest('#pypProfil')) { toggleInArray(state.pyp.profil, t.value, t.checked); debounceSave(); return; }
+  if(t.id === 'pypRestitution') { state.pyp.action.restitutionFaite = t.checked; debounceSave(); return; }
+});
+
+/* Délégation centrale pour les actions */
+document.addEventListener('click', e=>{
+  if(e.target.closest('#linkClearAll')) {
+    e.preventDefault();
+    if(confirm('Effacer tout le cahier ?')) resetExperiment();
+    return;
+  }
+  const btn = e.target.closest('button'); if(!btn) return;
+
+  // Barre haute
+  if(btn.id==='btnNewExp') openModal('modalNewExp');
+  if(btn.id==='btnSaveLocal') { saveState(); showStatus('Sauvegardé manuellement ✅'); }
+  if(btn.id==='btnExportPDF') generatePDF();
+  if(btn.id==='btnSettings') { syncSettingsModal(); openModal('modalSettings'); }
+  if(btn.id==='btnGuide') { renderGuideStatic(); renderGuideProg(); openModal('modalGuide'); }
+  if(btn.id==='btnLivrables') { renderDocsForm(); openModal('modalLivrables'); }
+  if(btn.id==='guideClose' || btn.id==='livrablesClose') closeAllModals();
+  if(btn.dataset.doc) produireDocument(btn.dataset.doc, btn.dataset.format || 'pdf');
+  if(btn.matches('.tab-btn')) {
+    const group = btn.closest('.tabs');
+    const box = btn.closest('.modal-box');
+    if(group && box) {
+      group.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      box.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === btn.dataset.tab));
+    }
+  }
+  if(btn.matches('.btn-ouvrir-etape')) ouvrirEtape(btn.dataset.cycle);
+  if(btn.id==='btnExportJSON') exportJSON();
+  if(btn.id==='btnImportJSON') { const f = $('#fileImportJSON'); if(f) f.click(); }
+
+  // Modale : nouvelle expérience
+  if(btn.id==='modalCancel' || btn.id==='modalClose') closeAllModals();
+  if(btn.id==='modalConfirm') { closeAllModals(); resetExperiment(); }
+
+  // Paramètres (modules + IA)
+  if(btn.id==='settingsCancel') closeAllModals();
+  if(btn.id==='settingsSave') saveSettingsModal();
+  if(btn.id==='btnAskAI') askAI();
+
+  // Triggers
+  if(btn.id==='btnUseTrigger') {
+    const selected = $('#triggersGrid .trigger-card.selected');
+    if(selected) fillTrigger(TRIGGERS_DB.find(t=>t.title===selected.querySelector('.title').textContent));
+  }
+
+  // Phases
+  if(btn.id==='btnAddPhase') addPhase();
+  if(btn.id==='btnPypCycle') createPYPCycle();
+  if(btn.matches('[data-action="clear"]')) clearImage(btn);
+  if(btn.matches('.btn-cam')) { const inp = btn.closest('.img-zone')?.querySelector('input[type="file"]'); if(inp) inp.click(); }
+  if(btn.matches('.btn-delete-obs')) {
+    const block = btn.closest('.observation-block');
+    if(confirm('Supprimer cette phase ?')) {
+      const idx = parseInt(block.dataset.index,10);
+      state.phases.splice(idx,1);
+      renderPhases();
+    }
+  }
+
+  // PYP : axes de recherche
+  if(btn.id==='btnAddAxe' && state.pyp.axes.length < PYP_MAX_AXES) {
+    state.pyp.axes.push('');
+    renderAxes(); saveState();
+    const inputs = $$('.pyp-axe-input'); if(inputs.length) inputs[inputs.length-1].focus();
+  }
+  if(btn.matches('.pyp-axe-remove') && state.pyp.axes.length > 1) {
+    state.pyp.axes.splice(parseInt(btn.dataset.axeIndex, 10), 1);
+    renderAxes(); saveState();
+  }
+});
+
+/* ------------------------------------------------------------
+   FONCTIONS UTILITAIRES (reset, etc.)
+------------------------------------------------------------ */
+function addPhase() {
+  let cycle = '';
+  if(state.pypMode) { // propose l'étape suivante du cycle
+    const last = [...state.phases].reverse().find(p => p.cycle);
+    const i = last ? PYP_CYCLE.findIndex(c => c.value === last.cycle) : -1;
+    cycle = PYP_CYCLE[Math.min(i + 1, PYP_CYCLE.length - 1)].value;
+  }
+  state.phases.push({ text:'', image:null, datetime:'', cycle });
+  renderPhases();
+}
+function clearImage(btn) {
+  const block = btn.closest('.observation-block'); if(!block) return;
+  const zone = block.querySelector('[data-field="image"]');
+  const img = zone.querySelector('img'); if(img) img.remove();
+  zone.classList.remove('has-img');
+  const ph = zone.querySelector('.placeholder'); if(ph) ph.style.display = 'flex';
+  saveBlockData(block); debounceSave();
+}
+function resetExperiment() {
+  // On garde les réglages (modules, IA), on vide le contenu
+  const keep = { triggersShown: state.triggersShown, iaShown: state.iaShown, pypMode: state.pypMode, aiSettings: state.aiSettings };
+  state = { ...getDefaultState(), ...keep };
+  saveState();
+  renderAll();
+  showStatus('Nouvelle expérience créée.');
+}
+</script>
+</body>
+</html>
